@@ -1,73 +1,76 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Quantum & Optics Laboratory Simulator</title>
     <style>
-        body { margin: 0; background-color: #121214; color: #e1e1e6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; overflow: hidden; }
-        #toolbox { width: 260px; background-color: #1a1a1e; border-right: 2px solid #29292e; padding: 15px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
-        .section-title { font-size: 14px; font-weight: bold; color: #00adb5; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; border-bottom: 1px solid #29292e; padding-bottom: 5px; }
-        .tool-btn { background-color: #29292e; border: 1px solid #3f3f46; color: #e1e1e6; padding: 10px; text-align: left; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; }
+        body { margin: 0; background-color: #121214; color: #e1e1e6; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        #toolbox { width: 280px; background-color: #1a1a1e; border-right: 2px solid #29292e; padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+        .section-title { font-size: 12px; font-weight: bold; color: #00adb5; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; border-bottom: 1px solid #29292e; padding-bottom: 5px; }
+        .tool-btn { background-color: #29292e; border: 1px solid #3f3f46; color: #e1e1e6; padding: 10px; text-align: left; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; }
         .tool-btn:hover { background-color: #3f3f46; border-color: #00adb5; }
-        #canvas-container { flex: 1; position: relative; background: radial-gradient(circle, #101014 0%, #050508 100%); }
+        #canvas-container { flex: 1; position: relative; background: #0a0a0c; }
         canvas { display: block; width: 100%; height: 100%; }
-        #code-monitor { position: absolute; bottom: 15px; right: 15px; width: 350px; background: rgba(26, 26, 30, 0.95); border: 2px solid #00adb5; border-radius: 8px; padding: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: none; }
-        .monitor-header { font-size: 12px; font-weight: bold; color: #00adb5; margin-bottom: 5px; display: flex; justify-content: space-between; }
-        textarea { width: 100%; height: 120px; background: #0c0c0e; color: #393; border: 1px solid #29292e; font-family: monospace; font-size: 12px; padding: 5px; box-sizing: border-box; resize: none; border-radius: 4px; }
-        .hint { font-size: 11px; color: #7c7c8a; text-align: center; margin-top: auto; line-height: 1.4; }
+        #python-terminal { position: absolute; bottom: 20px; right: 20px; width: 360px; background: rgba(20, 20, 25, 0.95); border: 2px solid #00adb5; border-radius: 8px; padding: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); display: none; }
+        .term-header { font-size: 12px; font-weight: bold; color: #00adb5; margin-bottom: 6px; display: flex; justify-content: space-between; }
+        textarea { width: 100%; height: 140px; background: #050507; color: #38bdf8; border: 1px solid #3f3f46; font-family: monospace; font-size: 11px; padding: 8px; box-sizing: border-box; resize: none; border-radius: 4px; }
+        .term-out { font-family: monospace; font-size: 11px; color: #4ade80; margin-top: 6px; background: #000; padding: 6px; height: 50px; overflow-y: auto; border-radius: 4px; }
+        .controls-info { font-size: 11px; color: #71717a; line-height: 1.5; margin-top: auto; background: #141416; padding: 8px; border-radius: 6px; }
     </style>
 </head>
 <body>
 
     <div id="toolbox">
-        <div class="section-title">💡 광원 (Light Source)</div>
-        <button class="tool-btn" onclick="spawn('box-1')">분광상자 (1줄기) <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('box-3')">분광상자 (3줄기) <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('box-5')">분광상자 (5줄기) <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('laser-rgb')">RGB 레이저 소스 <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('laser-hene')">He-Ne 레이저 (붉은빛) <span>[+]</span></button>
+        <div class="section-title">💡 Light Sources</div>
+        <button class="tool-btn" onclick="spawn('box-1')">Light Box (1 Beam) <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('box-3')">Light Box (3 Beams) <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('box-5')">Light Box (5 Beams) <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('laser-rgb')">RGB Laser Source <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('laser-hene')">He-Ne Laser (Red) <span>[+]</span></button>
 
-        <div class="section-title">🔮 프리즘 & 렌즈</div>
-        <button class="tool-btn" onclick="spawn('prism-tri')">삼각형 프리즘 <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('prism-rect')">사각형 프리즘 <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('prism-tra')">사다리꼴 프리즘 <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('lens-convex')">볼록 렌즈 <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('lens-concave')">오목 렌즈 <span>[+]</span></button>
+        <div class="section-title">🔮 Prisms & Optics</div>
+        <button class="tool-btn" onclick="spawn('prism-triangle')">Triangle Prism <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('prism-rectangle')">Rectangle Prism <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('prism-circle')">Circle Prism <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('prism-trapezoid')">Trapezoid Prism <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('prism-pyramid')">Pyramid Prism <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('prism-cone')">Cone Prism <span>[+]</span></button>
 
-        <div class="section-title">🪞 거울 (Mirror)</div>
-        <button class="tool-btn" onclick="spawn('mirror-convex')">볼록 거울 <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('mirror-concave')">오목 거울 <span>[+]</span></button>
+        <div class="section-title">🔍 Lenses & Mirrors</div>
+        <button class="tool-btn" onclick="spawn('lens-convex')">Convex Lens <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('lens-concave')">Concave Lens <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('mirror-convex')">Convex Mirror <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('mirror-concave')">Concave Mirror <span>[+]</span></button>
 
-        <div class="section-title">⚡ 전자 회로 & 코딩</div>
-        <button class="tool-btn" onclick="spawn('sensor')">빛 감지 센서 <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('battery')">파워 배터리 <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('computer')">제어 컴퓨터 (Python) <span>[+]</span></button>
+        <div class="section-title">⚡ Electronics & IoT</div>
+        <button class="tool-btn" onclick="spawn('light-sensor')">Light Sensor <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('battery')">Power Battery <span>[+]</span></button>
+        <button class="tool-btn" onclick="spawn('computer')">Control Computer <span>[+]</span></button>
 
-        <div class="hint">
-            [조작법]<br>
-            드래그: 마우스 왼쪽 클릭 이동<br>
-            정교한 회전: 마우스 휠 (0.5도 단위)<br>
-            삭제: 물체 선택 후 Delete 키
+        <div class="controls-info">
+            <strong>[Controls]</strong><br>
+            • Drag & Drop: Left Click<br>
+            • Fine Rotate: Mouse Wheel (0.5°)<br>
+            • Delete Object: Press [Delete] key
         </div>
     </div>
 
     <div id="canvas-container">
         <canvas id="simCanvas"></canvas>
 
-        <div id="code-monitor" id="monitor">
-            <div class="monitor-header">
-                <span>💻 Python IDE - IoT Sensor Controller</span>
-                <span style="color:#ff5555; cursor:pointer;" onclick="document.getElementById('code-monitor').style.display='none'">[X]</span>
+        <div id="python-terminal">
+            <div class="term-header">
+                <span>💻 Embedded Python IDE (IoT Controller)</span>
+                <span style="color:#ef4444; cursor:pointer; font-weight:bold;" onclick="document.getElementById('python-terminal').style.display='none'">[X]</span>
             </div>
-            <textarea id="pythonCode"># Python IoT Script
-def on_light_detect(sensor):
-    if sensor.is_triggered:
-        print("🚨 [BEEP!] 빛 감지! 회로 차단기 작동.")
-        # 회로 전원 OFF 시뮬레이션
-        set_circuit_power(False)
+            <textarea id="pyCode" spellcheck="false"># Python IoT Script v1.0
+def on_laser_signal(sensor):
+    if sensor.is_triggered():
+        print("🚨 [BEEP!] Laser Detected! Triggering Alarm.")
+        set_circuit_relay(False) # Turn off main circuit
     else:
-        set_circuit_power(True)</textarea>
-            <div id="terminal-out" style="font-family:monospace; font-size:11px; color:#00ff00; margin-top:5px; background:#000; padding:3px; height:40px; overflow-y:auto;">Terminal: Waiting for laser...</div>
+        set_circuit_relay(True)  # Keep circuit active</textarea>
+            <div id="pyOut" class="term-out">System: Initialization complete. Waiting for laser...</div>
         </div>
     </div>
 
@@ -80,7 +83,6 @@ def on_light_detect(sensor):
         let isDragging = false;
         let dragOffset = { x: 0, y: 0 };
 
-        // 창 크기 맞춤
         function resizeCanvas() {
             canvas.width = canvas.parentElement.clientWidth;
             canvas.height = canvas.parentElement.clientHeight;
@@ -88,105 +90,96 @@ def on_light_detect(sensor):
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // 오브젝트 스폰 (무한 생성 가능)
+        // Infinite Spawner Logic
         function spawn(type) {
             let obj = {
                 id: Date.now() + Math.random(),
                 type: type,
-                x: canvas.width / 2 + (Math.random() * 40 - 20),
-                y: canvas.height / 2 + (Math.random() * 40 - 20),
+                x: canvas.width / 2 + (Math.random() * 60 - 30),
+                y: canvas.height / 2 + (Math.random() * 60 - 30),
                 angle: 0,
                 width: 70,
                 height: 50,
-                isTriggered: false
+                triggered: false
             };
 
-            if(type.includes('lens') || type.includes('mirror')) { obj.width = 20; obj.height = 90; }
-            if(type === 'computer') { obj.width = 80; obj.height = 60; }
-            if(type === 'sensor') { obj.width = 40; obj.height = 40; }
-            if(type === 'battery') { obj.width = 50; obj.height = 40; }
+            // Custom dimensions per item type
+            if(type.includes('lens') || type.includes('mirror')) { obj.width = 16; obj.height = 90; }
+            else if(type.includes('prism-')) { obj.width = 65; obj.height = 65; }
+            else if(type === 'light-sensor') { obj.width = 45; obj.height = 45; }
+            else if(type === 'computer') { obj.width = 85; obj.height = 60; }
+            else if(type === 'battery') { obj.width = 55; obj.height = 40; }
 
             objects.push(obj);
             selectedObj = obj;
         }
 
-        // 레이저 광선 추적 및 렌더링 물리 엔진
+        // Ray Tracing Logic & Physics Simulation
         function traceLasers() {
             let beams = [];
 
-            // 광원들로부터 광선 시작점 생성
+            // 1. Generate initial light beams from sources
             objects.forEach(obj => {
                 if (obj.type.startsWith('box-') || obj.type.startsWith('laser-')) {
                     let count = 1;
-                    let color = '#ff0000';
+                    let color = '#ff3333';
                     if (obj.type === 'box-3') count = 3;
                     if (obj.type === 'box-5') count = 5;
-                    if (obj.type === 'laser-rgb') color = 'multi';
-                    if (obj.type === 'laser-hene') color = '#ff3333';
+                    if (obj.type === 'laser-rgb') color = 'rgb';
 
                     for (let i = 0; i < count; i++) {
-                        let offsetDir = (i - (count - 1) / 2) * 15;
+                        let offsetDir = (i - (count - 1) / 2) * 14;
                         let rad = obj.angle * Math.PI / 180;
+                        let startX = obj.x + Math.cos(rad) * (obj.width / 2);
+                        let startY = obj.y + Math.sin(rad) * (obj.width / 2);
                         
-                        let startX = obj.x + Math.cos(rad) * (obj.width/2);
-                        let startY = obj.y + Math.sin(rad) * (obj.width/2);
-                        
-                        if(count > 1) {
+                        if (count > 1) {
                             startX += Math.sin(rad) * offsetDir;
                             startY -= Math.cos(rad) * offsetDir;
                         }
 
-                        let colorsToSend = color === 'multi' ? ['#ff0000', '#00ff00', '#0000ff'] : [color];
-                        colorsToSend.forEach((c, idx) => {
-                            let spreadAngle = color === 'multi' ? (idx - 1) * 3 : 0;
-                            beams.push({
-                                x: startX,
-                                y: startY,
-                                angle: obj.angle + spreadAngle,
-                                color: c
-                            });
+                        let beamColors = color === 'rgb' ? ['#ff3333', '#33ff33', '#3333ff'] : [color];
+                        beamColors.forEach((c, idx) => {
+                            let spread = color === 'rgb' ? (idx - 1) * 3.5 : 0;
+                            beams.push({ x: startX, y: startY, angle: obj.angle + spread, color: c });
                         });
                     }
                 }
             });
 
-            // 센서 상태 초기화
-            objects.forEach(o => { if(o.type === 'sensor') o.isTriggered = false; });
+            // Reset sensor states before collision math
+            objects.forEach(o => { if(o.type === 'light-sensor') o.triggered = false; });
 
-            // 광선 그리기 알고리즘
+            // 2. Dynamic Ray Collision & Rendering
             beams.forEach(beam => {
                 ctx.lineWidth = 2.5;
-                ctx.shadowBlur = 6;
                 ctx.strokeStyle = beam.color;
+                ctx.shadowBlur = 8;
                 ctx.shadowColor = beam.color;
 
                 ctx.beginPath();
                 ctx.moveTo(beam.x, beam.y);
 
-                let currentX = beam.x;
-                let currentY = beam.y;
                 let rad = beam.angle * Math.PI / 180;
-                
-                // 가상의 긴 광선 끝점 계산
-                let endX = currentX + Math.cos(rad) * 2000;
-                let endY = currentY + Math.sin(rad) * 2000;
+                let endX = beam.x + Math.cos(rad) * 2000;
+                let endY = beam.y + Math.sin(rad) * 2000;
 
-                // 레이저가 물체(프리즘/센서)와 부딪히는지 간단 체크 연산
+                // Simple Ray-Casting box checks
                 objects.forEach(obj => {
-                    if (obj.type === 'sensor') {
-                        let d = Math.hypot(obj.x - (currentX + Math.cos(rad)*150), obj.y - (currentY + Math.sin(rad)*150));
-                        if (d < 50) { // 센서 근접 시 충돌 판정
-                            obj.isTriggered = true;
-                            endX = obj.x;
-                            endY = obj.y;
+                    if (obj.type === 'light-sensor') {
+                        let dist = Math.hypot(obj.x - (beam.x + Math.cos(rad) * 150), obj.y - (beam.y + Math.sin(rad) * 150));
+                        if (dist < 55) {
+                            obj.triggered = true;
+                            endX = obj.x - Math.cos(rad) * 10;
+                            endY = obj.y - Math.sin(rad) * 10;
                         }
                     }
-                    // 프리즘 꺾임 연산 뼈대 (실제 교점 계산 축약형 코드로 시각화)
-                    if (obj.type.startsWith('prism-') && Math.hypot(obj.x - currentX, obj.y - currentY) < 300) {
-                        let d = Math.hypot(obj.x - (currentX + Math.cos(rad)*100), obj.y - (currentY + Math.sin(rad)*100));
-                        if(d < 40) {
+                    if (obj.type.includes('prism') || obj.type.includes('lens')) {
+                        let dist = Math.hypot(obj.x - (beam.x + Math.cos(rad) * 120), obj.y - (beam.y + Math.sin(rad) * 120));
+                        if (dist < 45) {
                             endX = obj.x;
                             endY = obj.y;
+                            // Visual placeholder for refraction point
                         }
                     }
                 });
@@ -194,114 +187,112 @@ def on_light_detect(sensor):
                 ctx.lineTo(endX, endY);
                 ctx.stroke();
             });
-            ctx.shadowBlur = 0; // 초기화
+            ctx.shadowBlur = 0; // Reset canvas filter
         }
 
-        // 전체 화면 그리기 메인 루프
+        // Draw Loop
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 그리드 배경선
-            ctx.strokeStyle = '#1f1f23';
+            // Tech Laboratory Grid Line Background
+            ctx.strokeStyle = '#16161a';
             ctx.lineWidth = 1;
             for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
             for(let j=0; j<canvas.height; j+=40) { ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(canvas.width,j); ctx.stroke(); }
 
-            // 레이저 광선 추적 연산 작동
             traceLasers();
 
-            // 물체들 그리기
+            // Render Modules
             objects.forEach(obj => {
                 ctx.save();
                 ctx.translate(obj.x, obj.y);
                 ctx.rotate(obj.angle * Math.PI / 180);
 
-                // 선택된 물체 강조 테두리
+                // Highlight Selection Boundary
                 if (obj === selectedObj) {
                     ctx.strokeStyle = '#00adb5';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(-obj.width/2 - 4, -obj.height/2 - 4, obj.width + 8, obj.height + 8);
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(-obj.width/2 - 5, -obj.height/2 - 5, obj.width + 10, obj.height + 10);
                 }
 
-                // 타입별 디자인 드로잉
+                // Render styles based on UI asset type
                 if (obj.type.startsWith('box-') || obj.type.startsWith('laser-')) {
-                    ctx.fillStyle = '#3f3f46';
+                    ctx.fillStyle = '#27272a';
                     ctx.fillRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    ctx.fillStyle = '#00adb5';
-                    ctx.fillRect(obj.width/2 - 8, -5, 8, 10); // 렌즈 구멍
+                    ctx.fillStyle = '#a1a1aa';
+                    ctx.fillRect(obj.width/2 - 6, -6, 6, 12);
                 } 
                 else if (obj.type.startsWith('prism-')) {
-                    ctx.fillStyle = 'rgba(0, 173, 181, 0.25)';
-                    ctx.strokeStyle = '#00adb5';
+                    ctx.fillStyle = 'rgba(14, 165, 233, 0.2)';
+                    ctx.strokeStyle = '#38bdf8';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
-                    if(obj.type === 'prism-tri') {
+                    if(obj.type === 'prism-triangle' || obj.type === 'prism-pyramid') {
                         ctx.moveTo(0, -obj.height/2); ctx.lineTo(obj.width/2, obj.height/2); ctx.lineTo(-obj.width/2, obj.height/2);
-                    } else if(obj.type === 'prism-rect') {
+                    } else if(obj.type === 'prism-rectangle') {
                         ctx.rect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    } else if(obj.type === 'prism-tra') {
+                    } else if(obj.type === 'prism-circle' || obj.type === 'prism-cone') {
+                        ctx.arc(0, 0, obj.width/2, 0, Math.PI*2);
+                    } else if(obj.type === 'prism-trapezoid') {
                         ctx.moveTo(-obj.width/3, -obj.height/2); ctx.lineTo(obj.width/3, -obj.height/2);
                         ctx.lineTo(obj.width/2, obj.height/2); ctx.lineTo(-obj.width/2, obj.height/2);
                     }
                     ctx.closePath(); ctx.fill(); ctx.stroke();
                 } 
                 else if (obj.type.includes('lens') || obj.type.includes('mirror')) {
-                    ctx.strokeStyle = obj.type.includes('mirror') ? '#ffaa00' : '#4ecca3';
+                    ctx.strokeStyle = obj.type.includes('mirror') ? '#fbbf24' : '#34d399';
                     ctx.lineWidth = 4;
                     ctx.beginPath();
                     ctx.moveTo(0, -obj.height/2);
-                    ctx.quadraticCurveTo(obj.type.includes('convex') ? 15 : -15, 0, 0, obj.height/2);
+                    ctx.quadraticCurveTo(obj.type.includes('convex') ? 14 : -14, 0, 0, obj.height/2);
                     ctx.stroke();
                 }
-                else if (obj.type === 'sensor') {
-                    ctx.fillStyle = obj.isTriggered ? '#ff0055' : '#222831';
+                else if (obj.type === 'light-sensor') {
+                    ctx.fillStyle = obj.triggered ? '#ef4444' : '#1f2937';
                     ctx.fillRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    ctx.strokeStyle = '#e1e1e6';
+                    ctx.strokeStyle = '#f3f4f6';
                     ctx.strokeRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    // 빛 감지 시 시각 피드백 회로 작동 (삐 소리 및 불빛 텍스트 효과)
-                    if(obj.isTriggered) {
-                        ctx.fillStyle = '#fff';
-                        ctx.font = '9px sans-serif';
-                        ctx.fillText("⚡ [BEEP]", -18, 3);
+                    if(obj.triggered) {
+                        ctx.fillStyle = '#fff'; ctx.font = 'bold 9px sans-serif';
+                        ctx.fillText("⚡ SIGNAL", -20, 3);
                     }
                 }
                 else if (obj.type === 'battery') {
-                    ctx.fillStyle = '#f57c00';
+                    ctx.fillStyle = '#ea580c';
                     ctx.fillRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    ctx.fillStyle = '#fff'; ctx.fillRect(obj.width/2, -6, 4, 12);
+                    ctx.fillStyle = '#fff'; ctx.fillRect(obj.width/2, -5, 3, 10);
                 }
                 else if (obj.type === 'computer') {
-                    ctx.fillStyle = '#112233';
+                    ctx.fillStyle = '#0f172a';
                     ctx.fillRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    ctx.strokeStyle = '#00adb5'; ctx.strokeRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    ctx.fillStyle = '#00ff00'; ctx.font = '10px monospace'; ctx.fillText("PyOS v1.0", -25, 4);
+                    ctx.strokeStyle = '#38bdf8'; ctx.strokeRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
+                    ctx.fillStyle = '#22c55e'; ctx.font = '10px monospace'; ctx.fillText("Python OS", -26, 4);
                 }
 
                 ctx.restore();
             });
 
-            // 가상 파이썬 터미널 로그 시스템 실시간 연동 업데이트
-            let activeSensor = objects.find(o => o.type === 'sensor');
-            let term = document.getElementById('terminal-out');
-            if(activeSensor && term) {
-                if(activeSensor.isTriggered) {
-                    term.innerHTML = "🚨 [Python Log]: 삐! 센서에 빛이 감지되었습니다.<br>-> Circuit Relay: OFF";
+            // Live Python Terminal Logs Output Simulation
+            let anySensor = objects.find(o => o.type === 'light-sensor');
+            let termElement = document.getElementById('pyOut');
+            if(anySensor && termElement) {
+                if(anySensor.triggered) {
+                    termElement.innerHTML = "<span style='color:#ef4444;'>🚨 [Python Script]: BEEP! Laser active on Sensor.<br>Circuit Relay Interrupted -> [POWER OFF]</span>";
                 } else {
-                    term.innerHTML = "💡 [Python Log]: 센서 대기 중... 소리/불빛 꺼짐.<br>-> Circuit Relay: ON";
+                    termElement.innerHTML = "💡 [Python Script]: Monitoring IoT Bus... Status OK.<br>Circuit Relay Active -> [POWER ON]";
                 }
             }
 
             requestAnimationFrame(draw);
         }
 
-        // 마우스 상호작용 및 0.5도 정교한 회전 감지 센서 로직
+        // Mouse Controls & Ultra-Fine 0.5-Degree Wheel Rotation Math
         canvas.addEventListener('mousedown', (e) => {
             const rect = canvas.getBoundingClientRect();
             const mX = e.clientX - rect.left;
             const mY = e.clientY - rect.top;
 
             selectedObj = null;
-            // 가장 위에 있는 물체 선택
             for (let i = objects.length - 1; i >= 0; i--) {
                 let obj = objects[i];
                 if (Math.abs(mX - obj.x) < obj.width/2 && Math.abs(mY - obj.y) < obj.height/2) {
@@ -310,9 +301,8 @@ def on_light_detect(sensor):
                     dragOffset.x = mX - obj.x;
                     dragOffset.y = mY - obj.y;
                     
-                    // 컴퓨터 클릭 시 파이썬 코딩창 오픈
                     if(obj.type === 'computer') {
-                        document.getElementById('code-monitor').style.display = 'block';
+                        document.getElementById('python-terminal').style.display = 'block';
                     }
                     break;
                 }
@@ -329,16 +319,16 @@ def on_light_detect(sensor):
 
         window.addEventListener('mouseup', () => { isDragging = false; });
 
-        // 마우스 휠 감지 -> 정교하게 '0.5도' 단위 조절 연산 적용
+        // Wheel listener: 0.5 degree fine rotation increments
         canvas.addEventListener('wheel', (e) => {
             if (selectedObj) {
                 e.preventDefault();
-                let direction = e.deltaY > 0 ? 1 : -1;
-                selectedObj.angle += direction * 0.5; // 정확히 0.5도씩 회전 제어
+                let deltaDir = e.deltaY > 0 ? 1 : -1;
+                selectedObj.angle += deltaDir * 0.5; // Exactly 0.5-degree increments!
             }
         }, { passive: false });
 
-        // 딜리트(Delete) 키 누르면 물체 삭제 기능
+        // Global Key Delete Handler
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Delete' && selectedObj) {
                 objects = objects.filter(o => o.id !== selectedObj.id);
@@ -346,7 +336,7 @@ def on_light_detect(sensor):
             }
         });
 
-        // 애니메이션 루프 구동
+        // Initialize Loop
         draw();
     </script>
 </body>
