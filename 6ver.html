@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra-Precision Physics Optics Lab</title>
+    <style>
+        body { margin: 0; display: flex; font-family: 'Segoe UI', Arial, sans-serif; background-color: #0a0a0c; color: #e0e0e0; height: 100vh; overflow: hidden; }
+        #sidebar { width: 340px; background-color: #121216; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; border-right: 2px solid #22222a; z-index: 10; overflow-y: auto; }
+        #canvas-container { flex-grow: 1; position: relative; background-color: #030305; }
+        canvas { display: block; width: 100%; height: 100%; }
+        h2, h3 { margin: 0; color: #4db8ff; }
+        h3 { font-size: 12px; text-transform: uppercase; color: #777; margin-top: 5px; }
+        .tool-group { background: #1a1a22; padding: 10px; border-radius: 6px; border: 1px solid #2a2a35; }
+        .grid-box { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px; }
+        .tool-btn { background-color: #252530; color: #fff; border: 1px solid #353545; padding: 8px; cursor: pointer; border-radius: 4px; text-align: center; transition: 0.15s; font-weight: bold; font-size: 11px; }
+        .tool-btn:hover { background-color: #353545; border-color: #4db8ff; }
+        .active { background-color: #007acc !important; border-color: #4db8ff !important; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; color: #bbb; }
+        input[type="range"] { width: 100%; margin-bottom: 8px; accent-color: #4db8ff; }
+        .fine-tune-box { display: flex; gap: 4px; margin-top: 5px; }
+        .fine-btn { background-color: #2a3545; color: #4db8ff; border: 1px solid #3d4f66; padding: 6px; cursor: pointer; border-radius: 4px; font-size: 11px; font-weight: bold; flex: 1; text-align: center; }
+        .fine-btn:hover { background-color: #3d4f66; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h2>Optics Lab Precision</h2>
+        <p style="font-size: 10px; color:#666; margin:0;">[Wheel]: Ultra-fine Rotate (0.5°) | [Drag]: Move</p>
+        
+        <div class="tool-group">
+            <h3>💡 Light Rays Control</h3>
+            <div class="grid-box">
+                <div class="tool-btn active" id="l-1" onclick="changeLight(1)">1 Ray</div>
+                <div class="tool-btn" id="l-3" onclick="changeLight(3)">3 Rays</div>
+                <div class="tool-btn" id="l-5" onclick="changeLight(5)">5 Rays</div>
+                <div class="tool-btn" id="l-cone" onclick="changeLight('CONE')">⚠️ Cone Light</div>
+                <div class="tool-btn" id="l-rgb" onclick="changeLight('RGB')" style="grid-column: span 2;">RGB Rainbow</div>
+            </div>
+            <div class="slider-label" style="margin-top:8px;"><span>Source Y Position</span></div>
+            <input type="range" id="lightY" min="50" max="700" value="350" oninput="draw()">
+            <div class="slider-label"><span>Source Angle</span></div>
+            <input type="range" id="lightAngle" min="-60" max="60" value="0" oninput="draw()">
+        </div>
+
+        <div class="tool-group">
+            <h3>📐 Prisms & Pyramids</h3>
+            <div class="grid-box">
+                <div class="tool-btn" onclick="addDevice('prism_tri')">Equilateral</div>
+                <div class="tool-btn" onclick="addDevice('prism_right')">Right-Angled</div>
+                <div class="tool-btn" onclick="addDevice('pyramid_short')">Short Pyramid</div>
+                <div class="tool-btn" onclick="addDevice('pyramid_long')">Long Pyramid</div>
+                <div class="tool-btn" onclick="addDevice('cone_short')">Short Cone Block</div>
+                <div class="tool-btn" onclick="addDevice('cone_long')">Long Cone Block</div>
+                <div class="tool-btn" onclick="addDevice('trapezoid')">Trapezoid</div>
+                <div class="tool-btn" onclick="addDevice('rhombus')">Rhombus</div>
+            </div>
+        </div>
+
+        <div class="tool-group">
+            <h3>🔍 Lenses & Mirrors</h3>
+            <div class="grid-box">
+                <div class="tool-btn" onclick="addDevice('convex')">Convex Lens</div>
+                <div class="tool-btn" onclick="addDevice('concave')">Concave Lens</div>
+                <div class="tool-btn" onclick="addDevice('biconvex')">Biconvex Lens</div>
+                <div class="tool-btn" onclick="addDevice('biconcave')">Biconcave Lens</div>
+                <div class="tool-btn" onclick="addDevice('mirror_flat')">Flat Mirror</div>
+                <div class="tool-btn" onclick="addDevice('mirror_convex')">Convex Mirror</div>
+                <div class="tool-btn" onclick="addDevice('mirror_concave')">Concave Mirror</div>
+                <div class="tool-btn" onclick="addDevice('circular_block')">Glass Cylinder</div>
+            </div>
+        </div>
+
+        <div class="tool-group" id="control-panel" style="display:none; border-color: #4db8ff;">
+            <h3 style="color:#4db8ff; display: flex; justify-content: space-between;">
+                <span>⚙️ Selected Object</span>
+                <span id="angle-display" style="color:#fff; font-size:11px;">0.0°</span>
+            </h3>
+            
+            <div class="slider-label" style="margin-top: 5px;"><span>Fine-Tune Rotation Angle</span></div>
+            <div class="fine-tune-box">
+                <button class="fine-btn" onclick="rotateSelected(-1)">-1.0°</button>
+                <button class="fine-btn" onclick="rotateSelected(-0.1)">-0.1°</button>
+                <button class="fine-btn" onclick="rotateSelected(0.1)">+0.1°</button>
+                <button class="fine-btn" onclick="rotateSelected(1)">+1.0°</button>
+            </div>
+
+            <div class="slider-label" style="margin-top:8px;"><span>Scale Width</span></div>
+            <input type="range" id="objW" min="20" max="300" value="100" oninput="updateSelected()">
+            <div class="slider-label"><span>Scale Height</span></div>
+            <input type="range" id="objH" min="20" max="300" value="100" oninput="updateSelected()">
+            <div class="tool-btn" onclick="deleteSelected()" style="background:#401515; border-color:#722; width:100%; margin-top:5px;">Delete Object</div>
+        </div>
+
+        <div class="tool-group">
+            <div class="tool-btn" onclick="clearAll()" style="background-color: #2a1515; color: #ff5555; border-color: #4a2222; width:100%;">Clear Workspace</div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="mainCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        let w, h;
+
+        let optics = []; 
+        let selectedObj = null;
+        let lightMode = 1; 
+        let isDragging = false;
+
+        function resize() {
+            w = canvas.width = canvas.parentElement.clientWidth;
+            h = canvas.height = canvas.parentElement.clientHeight;
+            draw();
+        }
+        window.addEventListener('resize', resize);
+
+        function changeLight(mode) {
+            lightMode = mode;
+            document.querySelectorAll('[id^="l-"]').forEach(b => b.classList.remove('active'));
+            let activeId = mode === 'RGB' ? 'l-rgb' : (mode === 'CONE' ? 'l-cone' : 'l-' + mode);
+            document.getElementById(activeId).classList.add('active');
+            draw();
+        }
+
+        function addDevice(type) {
+            let obj = { type: type, x: w / 2, y: h / 2, ow: 100, oh: 100, angle: 0 };
+            optics.push(obj);
+            selectObject(obj);
+            draw();
+        }
+
+        function selectObject(obj) {
+            selectedObj = obj;
+            if(obj) {
+                document.getElementById('control-panel').style.display = 'block';
+                document.getElementById('objW').value = obj.ow;
+                document.getElementById('objH').value = obj.oh;
+                updateAngleDisplay();
+            } else {
+                document.getElementById('control-panel').style.display = 'none';
+            }
+        }
+
+        function updateSelected() {
+            if(selectedObj) {
+                selectedObj.ow = parseInt(document.getElementById('objW').value);
+                selectedObj.oh = parseInt(document.getElementById('objH').value);
+                draw();
+            }
+        }
+
+        function rotateSelected(deg) {
+            if(selectedObj) {
+                selectedObj.angle += (deg * Math.PI / 180);
+                updateAngleDisplay();
+                draw();
+            }
+        }
+
+        function updateAngleDisplay() {
+            if(selectedObj) {
+                let deg = (selectedObj.angle * 180 / Math.PI) % 360;
+                if(deg < 0) deg += 360;
+                document.getElementById('angle-display').innerText = deg.toFixed(1) + "°";
+            }
+        }
+
+        function deleteSelected() {
+            if(selectedObj) { optics = optics.filter(o => o !== selectedObj); selectObject(null); draw(); }
+        }
+
+        function clearAll() { optics = []; selectObject(null); draw(); }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            let hit = false;
+            for(let i = optics.length - 1; i >= 0; i--) {
+                let o = optics[i];
+                if(Math.hypot(o.x - mx, o.y - my) < Math.max(o.ow, o.oh) / 1.5) { selectObject(o); isDragging = true; hit = true; break; }
+            }
+            if(!hit) selectObject(null);
+            draw();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if(isDragging && selectedObj) {
+                const rect = canvas.getBoundingClientRect();
+                selectedObj.x = e.clientX - rect.left; selectedObj.y = e.clientY - rect.top;
+                draw();
+            }
+        });
+
+        window.addEventListener('mouseup', () => isDragging = false);
+        
+        canvas.addEventListener('wheel', (e) => {
+            if(selectedObj) { 
+                e.preventDefault(); 
+                let direction = e.deltaY > 0 ? 1 : -1;
+                selectedObj.angle += direction * (0.5 * Math.PI / 180); 
+                updateAngleDisplay();
+                draw(); 
+            }
+        }, { passive: false });
+
+        function getBoundaries(obj, baseN) {
+            let pts = [];
+            let sw = obj.ow, sh = obj.oh;
+
+            switch(obj.type) {
+                case 'prism_tri': pts = [{x: 0, y: -sh*0.58}, {x: sw*0.5, y: sh*0.29}, {x: -sw*0.5, y: sh*0.29}]; break;
+                case 'prism_right': pts = [{x: -sw*0.5, y: -sh*0.5}, {x: sw*0.5, y: sh*0.5}, {x: -sw*0.5, y: sh*0.5}]; break;
+                case 'pyramid_short': pts = [{x: 0, y: -sh*0.3}, {x: sw*0.5, y: sh*0.3}, {x: sw*0.25, y: sh*0.3}, {x:-sw*0.25, y:sh*0.3}, {x: -sw*0.5, y: sh*0.3}]; break;
+                case 'pyramid_long': pts = [{x: 0, y: -sh*0.7}, {x: sw*0.4, y: sh*0.6}, {x: -sw*0.4, y: sh*0.6}]; break;
+                case 'cone_short': pts = [{x: 0, y: -sh*0.3}, {x: sw*0.4, y: sh*0.3}, {x: -sw*0.4, y: sh*0.3}]; break;
+                case 'cone_long': pts = [{x: 0, y: -sh*0.8}, {x: sw*0.3, y: sh*0.5}, {x: -sw*0.3, y: sh*0.5}]; break;
+                case 'trapezoid': pts = [{x: -sw*0.25, y: -sh*0.4}, {x: sw*0.25, y: -sh*0.4}, {x: sw*0.5, y: sh*0.4}, {x: -sw*0.5, y: sh*0.4}]; break;
+                case 'rhombus': pts = [{x: 0, y: -sh*0.5}, {x: sw*0.4, y: 0}, {x: 0, y: sh*0.5}, {x: -sw*0.4, y: 0}]; break;
+                case 'mirror_flat': pts = [{x: 0, y: -sh*0.5}, {x: 0, y: sh*0.5}]; break;
+                case 'circular_block': 
+                case 'convex':
+                case 'concave':
+                case 'biconvex':
+                case 'biconcave':
+                case 'mirror_convex':
+                case 'mirror_concave':
+                    let segs = [];
+                    let steps = 18;
+                    let lastPt = null;
+                    for (let i = 0; i <= steps; i++) {
+                        let t = (i / steps) * Math.PI - Math.PI/2;
+                        let hx = 0, hy = (i/steps)*sh - sh/2;
+                        if(obj.type === 'circular_block') { hx = Math.cos(t)*sw*0.5; hy = Math.sin(t)*sh*0.5; }
+                        else if(obj.type === 'convex') { hx = -(Math.cos(t) * sw * 0.2) + sw*0.2; }
+                        else if(obj.type === 'concave') { hx = (Math.cos(t) * sw * 0.3); }
+                        else if(obj.type === 'biconvex') { hx = -(Math.cos(t) * sw * 0.25) + sw*0.2; }
+                        else if(obj.type === 'biconcave') { hx = (Math.cos(t) * sw * 0.35); }
+                        else if(obj.type === 'mirror_convex') { hx = (Math.cos(t) * sw * 0.4); }
+                        else if(obj.type === 'mirror_concave') { hx = -(Math.cos(t) * sw * 0.4); }
+
+                        let rx = hx * Math.cos(obj.angle) - hy * Math.sin(obj.angle) + obj.x;
+                        let ry = hx * Math.sin(obj.angle) + hy * Math.cos(obj.angle) + obj.y;
+                        let curr = {x: rx, y: ry};
+                        if (lastPt) {
+                            let dx = curr.x - lastPt.x, dy = curr.y - lastPt.y, l = Math.hypot(dx,dy);
+                            let isMirror = obj.type.startsWith('mirror');
+                            segs.push({p1: lastPt, p2: curr, normal: {x: -dy/l, y: dx/l}, type: isMirror ? 'reflect' : 'refract', n: baseN});
+                        }
+                        lastPt = curr;
+                    }
+                    if(obj.type === 'biconvex' || obj.type === 'biconcave' || obj.type === 'convex' || obj.type === 'concave') {
+                        let firstPt = segs[0].p1, finalPt = segs[segs.length-1].p2;
+                        let backPts = [];
+                        for(let i=steps; i>=0; i--) {
+                            let t = (i / steps) * Math.PI - Math.PI/2;
+                            let hy = (i/steps)*sh - sh/2, hx = 0;
+                            if(obj.type === 'biconvex') hx = (Math.cos(t) * sw * 0.25) - sw*0.2;
+                            else if(obj.type === 'biconcave') hx = -(Math.cos(t) * sw * 0.35);
+                            else if(obj.type === 'convex') hx = sw*0.3;
+                            else if(obj.type === 'concave') hx = -sw*0.1;
+
+                            let rx = hx * Math.cos(obj.angle) - hy * Math.sin(obj.angle) + obj.x;
+                            let ry = hx * Math.sin(obj.angle) + hy * Math.cos(obj.angle) + obj.y;
+                            backPts.push({x: rx, y: ry});
+                        }
+                        let bp = backPts[0];
+                        let dx = bp.x - finalPt.x, dy = bp.y - finalPt.y, l = Math.hypot(dx,dy);
+                        segs.push({p1: finalPt, p2: bp, normal: {x:-dy/l, y:dx/l}, type: 'refract', n:baseN});
+                        for(let i=0; i<backPts.length-1; i++) {
+                            let p1 = backPts[i], p2 = backPts[i+1];
+                            let rdx = p2.x - p1.x, rdy = p2.y - p1.y, rl = Math.hypot(rdx,rdy);
+                            segs.push({p1: p1, p2: p2, normal: {x: -rdy/rl, y: rdx/rl}, type: 'refract', n: baseN});
+                        }
+                        let ep = backPts[backPts.length-1];
+                        let fdx = firstPt.x - ep.x, fdy = firstPt.y - ep.y, fl = Math.hypot(fdx,fdy);
+                        segs.push({p1: ep, p2: firstPt, normal: {x:-fdy/fl, y:fdx/fl}, type: 'refract', n:baseN});
+                    }
+                    return segs;
+            }
+
+            let trans = pts.map(p => ({
+                x: p.x * Math.cos(obj.angle) - p.y * Math.sin(obj.angle) + obj.x,
+                y: p.x * Math.sin(obj.angle) + p.y * Math.cos(obj.angle) + obj.y
+            }));
+
+            let segs = [];
+            for(let i=0; i<trans.length; i++) {
+                let p1 = trans[i], p2 = trans[(i+1)%trans.length];
+                if(obj.type === 'mirror_flat' && i === 1) break;
+                let dx = p2.x - p1.x, dy = p2.y - p1.y, len = Math.hypot(dx, dy);
+                segs.push({p1: p1, p2: p2, normal: {x: -dy/len, y: dx/len}, type: obj.type.startsWith('mirror') ? 'reflect' : 'refract', n: baseN});
+            }
+            return segs;
+        }
+
+        function getIntersection(ray, seg) {
+            const x1 = seg.p1.x, y1 = seg.p1.y, x2 = seg.p2.x, y2 = seg.p2.y;
+            const x3 = ray.x, y3 = ray.y, dx = ray.dx, dy = ray.dy;
+            const det = (x2 - x1) * dy - (y2 - y1) * dx;
+            if (Math.abs(det) < 1e-6) return null;
+            const t = ((x3 - x1) * dy - (y3 - y1) * dx) / det;
+            const u = ((x3 - x1) * (y2 - y1) - (y3 - y1) * (x2 - x1)) / det;
+            if (t >= 0 && t <= 1 && u > 0.05) return { x: x1 + t * (x2 - x1), y: y1 + t * (y2 - y1), dist: u };
+            return null;
+        }
+
+        function traceRay(x, y, dx, dy, color, baseN, depth = 0) {
+            if (depth > 32) return;
+
+            let closestHit = null, closestDist = Infinity, closestSeg = null;
+
+            for (let obj of optics) {
+                let segs = getBoundaries(obj, baseN);
+                for (let seg of segs) {
+                    let hit = getIntersection({x, y, dx, dy}, seg);
+                    if (hit && hit.dist < closestDist) { closestDist = hit.dist; closestHit = hit; closestSeg = seg; }
+                }
+            }
+
+            let endX = x + dx * (closestDist === Infinity ? 3000 : closestDist);
+            let endY = y + dy * (closestDist === Infinity ? 3000 : closestDist);
+
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(endX, endY);
+            ctx.strokeStyle = color; ctx.lineWidth = 2.2;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0.08, 1.0 - (depth * 0.03));
+            ctx.shadowBlur = 6; ctx.shadowColor = color;
+            ctx.stroke(); ctx.restore();
+
+            if (closestHit && closestSeg) {
+                let nx = closestSeg.normal.x, ny = closestSeg.normal.y;
+                let dot = dx * nx + dy * ny;
+                let sign = 1;
+                if (dot > 0) { nx = -nx; ny = -ny; dot = -dot; sign = -1; }
+
+                if (closestSeg.type === 'reflect') {
+                    let rx = dx - 2 * dot * nx; let ry = dy - 2 * dot * ny;
+                    traceRay(closestHit.x + rx*0.05, closestHit.y + ry*0.05, rx, ry, color, baseN, depth + 1);
+                } else if (closestSeg.type === 'refract') {
+                    let cos1 = -dot;
+                    let eta = (sign === 1) ? (1.0 / closestSeg.n) : (closestSeg.n / 1.0);
+                    let k = 1.0 - eta * eta * (1.0 - cos1 * cos1);
+                    
+                    if (k < 0) {
+                        let rx = dx - 2 * dot * nx; let ry = dy - 2 * dot * ny;
+                        traceRay(closestHit.x + rx*0.05, closestHit.y + ry*0.05, rx, ry, color, baseN, depth + 1);
+                    } else {
+                        let cos2 = Math.sqrt(k);
+                        let rx = eta * dx + (eta * cos1 - cos2) * nx;
+                        let ry = eta * dy + (eta * cos1 - cos2) * ny;
+                        traceRay(closestHit.x + rx*0.05, closestHit.y + ry*0.05, rx, ry, color, baseN, depth + 1);
+                    }
+                }
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#030305'; ctx.fillRect(0, 0, w, h);
+
+            optics.forEach(o => {
+                ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.angle);
+                if(o === selectedObj) {
+                    ctx.strokeStyle = 'rgba(77, 184, 255, 0.4)'; ctx.lineWidth = 1;
+                    ctx.strokeRect(-o.ow/1.3, -o.oh/1.3, o.ow*1.6, o.oh*1.6);
+                }
+                let isM = o.type.startsWith('mirror');
+                ctx.fillStyle = isM ? '#3a3a4a' : 'rgba(100, 220, 255, 0.12)';
+                ctx.strokeStyle = isM ? '#8a8a9a' : '#4db8ff'; ctx.lineWidth = 1.5;
+
+                ctx.beginPath();
+                let sw = o.ow, sh = o.oh;
+                if(o.type === 'prism_tri') { ctx.moveTo(0, -sh*0.58); ctx.lineTo(sw*0.5, sh*0.29); ctx.lineTo(-sw*0.5, sh*0.29); ctx.closePath(); }
+                else if(o.type === 'prism_right') { ctx.moveTo(-sw*0.5, -sh*0.5); ctx.lineTo(sw*0.5, sh*0.5); ctx.lineTo(-sw*0.5, sh*0.5); ctx.closePath(); }
+                else if(o.type === 'pyramid_short') { ctx.moveTo(0, -sh*0.3); ctx.lineTo(sw*0.5, sh*0.3); ctx.lineTo(-sw*0.5, sh*0.3); ctx.closePath(); }
+                else if(o.type === 'pyramid_long') { ctx.moveTo(0, -sh*0.7); ctx.lineTo(sw*0.4, sh*0.6); ctx.lineTo(-sw*0.4, sh*0.6); ctx.closePath(); }
+                else if(o.type === 'cone_short') { ctx.moveTo(0, -sh*0.3); ctx.lineTo(sw*0.4, sh*0.3); ctx.lineTo(-sw*0.4, sh*0.3); ctx.closePath(); }
+                else if(o.type === 'cone_long') { ctx.moveTo(0, -sh*0.8); ctx.lineTo(sw*0.3, sh*0.5); ctx.lineTo(-sw*0.3, sh*0.5); ctx.closePath(); }
+                else if(o.type === 'trapezoid') { ctx.moveTo(-sw*0.25, -sh*0.4); ctx.lineTo(sw*0.25, -sh*0.4); ctx.lineTo(sw*0.5, sh*0.4); ctx.lineTo(-sw*0.5, sh*0.4); ctx.closePath(); }
+                else if(o.type === 'rhombus') { ctx.moveTo(0, -sh*0.5); ctx.lineTo(sw*0.4, 0); ctx.lineTo(0, sh*0.5); ctx.lineTo(-sw*0.4, 0); ctx.closePath(); }
+                else if(o.type === 'mirror_flat') { ctx.rect(-3, -sh*0.5, 6, sh); }
+                else if(o.type === 'circular_block') { ctx.ellipse(0,0, sw*0.5, sh*0.5, 0, 0, Math.PI*2); }
+                else {
+                    let steps = 18;
+                    for(let i=0; i<=steps; i++) {
+                        let t = (i/steps)*Math.PI - Math.PI/2, hx = 0, hy = (i/steps)*sh - sh/2;
+                        if(o.type === 'convex') hx = -Math.cos(t)*sw*0.2 + sw*0.2;
+                        else if(o.type === 'concave') hx = Math.cos(t)*sw*0.3;
+                        else if(o.type === 'biconvex') hx = -Math.cos(t)*sw*0.25 + sw*0.2;
+                        else if(o.type === 'biconcave') hx = Math.cos(t)*sw*0.35;
+                        else if(o.type === 'mirror_convex') hx = Math.cos(t)*sw*0.4;
+                        else if(o.type === 'mirror_concave') hx = -Math.cos(t)*sw*0.4;
+                        if(i===0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
+                    }
+                    if(o.type==='biconvex'||o.type==='biconcave'||o.type==='convex'||o.type==='concave') {
+                        for(let i=steps; i>=0; i--) {
+                            let t = (i/steps)*Math.PI - Math.PI/2, hy = (i/steps)*sh - sh/2, hx = 0;
+                            if(o.type === 'biconvex') hx = Math.cos(t)*sw*0.25 - sw*0.2;
+                            else if(o.type === 'biconcave') hx = -Math.cos(t)*sw*0.35;
+                            else if(o.type === 'convex') hx = sw*0.3;
+                            else if(o.type === 'concave') hx = -sw*0.1;
+                            ctx.lineTo(hx, hy);
+                        }
+                    }
+                }
+                ctx.fill(); ctx.stroke(); ctx.restore();
+            });
+
+            const ly = parseInt(document.getElementById('lightY').value);
+            const la = parseInt(document.getElementById('lightAngle').value) * Math.PI / 180;
+            const ldx = Math.cos(la), ldy = Math.sin(la);
+            const realN = 1.48; 
+
+            ctx.save(); ctx.globalCompositeOperation = 'screen';
+            if (lightMode === 1) { traceRay(5, ly, ldx, ldy, '#ff3333', realN); }
+            else if (lightMode === 3) { for(let i=-1; i<=1; i++) traceRay(5, ly + i*25, ldx, ldy, '#33ff33', realN); }
+            else if (lightMode === 5) { for(let i=-2; i<=2; i++) traceRay(5, ly + i*18, ldx, ldy, '#00dfff', realN); }
+            else if (lightMode === 'CONE') {
+                // 세모 불빛 (Cone Light): 중심축을 기준으로 부채꼴 모양으로 9줄기 방사
+                let totalRays = 9;
+                for(let i=0; i<totalRays; i++) {
+                    let deltaAngle = (i - (totalRays-1)/2) * (6 * Math.PI / 180); // 총 48도 범위로 퍼짐
+                    let cdx = Math.cos(la + deltaAngle);
+                    let cdy = Math.sin(la + deltaAngle);
+                    traceRay(5, ly, cdx, cdy, '#ffff33', realN);
+                }
+            }
+            else if (lightMode === 'RGB') {
+                traceRay(5, ly, ldx, ldy, '#ff3333', realN - 0.04); 
+                traceRay(5, ly, ldx, ldy, '#ffaa00', realN - 0.01);
+                traceRay(5, ly, ldx, ldy, '#33ff33', realN + 0.01);
+                traceRay(5, ly, ldx, ldy, '#0055ff', realN + 0.03);
+                traceRay(5, ly, ldx, ldy, '#aa33ff', realN + 0.06);
+            }
+            ctx.restore();
+        }
+
+        resize();
+    </script>
+</body>
+</html>
