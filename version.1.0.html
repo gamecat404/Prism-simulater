@@ -1,343 +1,443 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Quantum & Optics Laboratory Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra-Precision Physics Optics Lab</title>
     <style>
-        body { margin: 0; background-color: #121214; color: #e1e1e6; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
-        #toolbox { width: 280px; background-color: #1a1a1e; border-right: 2px solid #29292e; padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
-        .section-title { font-size: 12px; font-weight: bold; color: #00adb5; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; border-bottom: 1px solid #29292e; padding-bottom: 5px; }
-        .tool-btn { background-color: #29292e; border: 1px solid #3f3f46; color: #e1e1e6; padding: 10px; text-align: left; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; }
-        .tool-btn:hover { background-color: #3f3f46; border-color: #00adb5; }
-        #canvas-container { flex: 1; position: relative; background: #0a0a0c; }
+        body { margin: 0; display: flex; font-family: 'Segoe UI', Arial, sans-serif; background-color: #0a0a0c; color: #e0e0e0; height: 100vh; overflow: hidden; }
+        #sidebar { width: 340px; background-color: #121216; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; border-right: 2px solid #22222a; z-index: 10; overflow-y: auto; }
+        #canvas-container { flex-grow: 1; position: relative; background-color: #030305; }
         canvas { display: block; width: 100%; height: 100%; }
-        #python-terminal { position: absolute; bottom: 20px; right: 20px; width: 360px; background: rgba(20, 20, 25, 0.95); border: 2px solid #00adb5; border-radius: 8px; padding: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); display: none; }
-        .term-header { font-size: 12px; font-weight: bold; color: #00adb5; margin-bottom: 6px; display: flex; justify-content: space-between; }
-        textarea { width: 100%; height: 140px; background: #050507; color: #38bdf8; border: 1px solid #3f3f46; font-family: monospace; font-size: 11px; padding: 8px; box-sizing: border-box; resize: none; border-radius: 4px; }
-        .term-out { font-family: monospace; font-size: 11px; color: #4ade80; margin-top: 6px; background: #000; padding: 6px; height: 50px; overflow-y: auto; border-radius: 4px; }
-        .controls-info { font-size: 11px; color: #71717a; line-height: 1.5; margin-top: auto; background: #141416; padding: 8px; border-radius: 6px; }
+        h2, h3 { margin: 0; color: #4db8ff; }
+        h3 { font-size: 12px; text-transform: uppercase; color: #777; margin-top: 5px; }
+        .tool-group { background: #1a1a22; padding: 10px; border-radius: 6px; border: 1px solid #2a2a35; }
+        .grid-box { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px; }
+        .tool-btn { background-color: #252530; color: #fff; border: 1px solid #353545; padding: 8px; cursor: pointer; border-radius: 4px; text-align: center; transition: 0.15s; font-weight: bold; font-size: 11px; }
+        .tool-btn:hover { background-color: #353545; border-color: #4db8ff; }
+        .active { background-color: #007acc !important; border-color: #4db8ff !important; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; color: #bbb; }
+        input[type="range"] { width: 100%; margin-bottom: 8px; accent-color: #4db8ff; }
+        
+        /* Fine Tuning Control Panel Styles */
+        .fine-tune-box { display: flex; gap: 4px; margin-top: 5px; }
+        .fine-btn { background-color: #2a3545; color: #4db8ff; border: 1px solid #3d4f66; padding: 6px; cursor: pointer; border-radius: 4px; font-size: 11px; font-weight: bold; flex: 1; text-align: center; }
+        .fine-btn:hover { background-color: #3d4f66; color: #fff; }
     </style>
 </head>
 <body>
 
-    <div id="toolbox">
-        <div class="section-title">💡 Light Sources</div>
-        <button class="tool-btn" onclick="spawn('box-1')">Light Box (1 Beam) <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('box-3')">Light Box (3 Beams) <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('box-5')">Light Box (5 Beams) <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('laser-rgb')">RGB Laser Source <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('laser-hene')">He-Ne Laser (Red) <span>[+]</span></button>
+    <div id="sidebar">
+        <h2>Optics Lab Precision</h2>
+        <p style="font-size: 10px; color:#666; margin:0;">[Wheel]: Ultra-fine Rotate (0.01°) | [Drag]: Move</p>
+        
+        <div class="tool-group">
+            <h3>💡 Light Rays Control</h3>
+            <div class="grid-box">
+                <div class="tool-btn active" id="l-1" onclick="changeLight(1)">1 Ray</div>
+                <div class="tool-btn" id="l-3" onclick="changeLight(3)">3 Rays</div>
+                <div class="tool-btn" id="l-5" onclick="changeLight(5)">5 Rays</div>
+                <div class="tool-btn" id="l-rgb" onclick="changeLight('RGB')">RGB Rainbow</div>
+            </div>
+            <div class="slider-label" style="margin-top:8px;"><span>Source Y Position</span></div>
+            <input type="range" id="lightY" min="50" max="700" value="350" oninput="draw()">
+            <div class="slider-label"><span>Source Angle</span></div>
+            <input type="range" id="lightAngle" min="-60" max="60" value="0" oninput="draw()">
+        </div>
 
-        <div class="section-title">🔮 Prisms & Optics</div>
-        <button class="tool-btn" onclick="spawn('prism-triangle')">Triangle Prism <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('prism-rectangle')">Rectangle Prism <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('prism-circle')">Circle Prism <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('prism-trapezoid')">Trapezoid Prism <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('prism-pyramid')">Pyramid Prism <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('prism-cone')">Cone Prism <span>[+]</span></button>
+        <div class="tool-group">
+            <h3>📐 Prisms & Pyramids</h3>
+            <div class="grid-box">
+                <div class="tool-btn" onclick="addDevice('prism_tri')">Equilateral</div>
+                <div class="tool-btn" onclick="addDevice('prism_right')">Right-Angled</div>
+                <div class="tool-btn" onclick="addDevice('pyramid_short')">Short Pyramid</div>
+                <div class="tool-btn" onclick="addDevice('pyramid_long')">Long Pyramid</div>
+                <div class="tool-btn" onclick="addDevice('cone_short')">Short Cone Block</div>
+                <div class="tool-btn" onclick="addDevice('cone_long')">Long Cone Block</div>
+                <div class="tool-btn" onclick="addDevice('trapezoid')">Trapezoid</div>
+                <div class="tool-btn" onclick="addDevice('rhombus')">Rhombus</div>
+            </div>
+        </div>
 
-        <div class="section-title">🔍 Lenses & Mirrors</div>
-        <button class="tool-btn" onclick="spawn('lens-convex')">Convex Lens <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('lens-concave')">Concave Lens <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('mirror-convex')">Convex Mirror <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('mirror-concave')">Concave Mirror <span>[+]</span></button>
+        <div class="tool-group">
+            <h3>🔍 Lenses & Mirrors</h3>
+            <div class="grid-box">
+                <div class="tool-btn" onclick="addDevice('convex')">Convex Lens</div>
+                <div class="tool-btn" onclick="addDevice('concave')">Concave Lens</div>
+                <div class="tool-btn" onclick="addDevice('biconvex')">Biconvex Lens</div>
+                <div class="tool-btn" onclick="addDevice('biconcave')">Biconcave Lens</div>
+                <div class="tool-btn" onclick="addDevice('mirror_flat')">Flat Mirror</div>
+                <div class="tool-btn" onclick="addDevice('mirror_convex')">Convex Mirror</div>
+                <div class="tool-btn" onclick="addDevice('mirror_concave')">Concave Mirror</div>
+                <div class="tool-btn" onclick="addDevice('circular_block')">Glass Cylinder</div>
+            </div>
+        </div>
 
-        <div class="section-title">⚡ Electronics & IoT</div>
-        <button class="tool-btn" onclick="spawn('light-sensor')">Light Sensor <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('battery')">Power Battery <span>[+]</span></button>
-        <button class="tool-btn" onclick="spawn('computer')">Control Computer <span>[+]</span></button>
+        <div class="tool-group" id="control-panel" style="display:none; border-color: #4db8ff;">
+            <h3 style="color:#4db8ff; display: flex; justify-content: space-between;">
+                <span>⚙️ Selected Object</span>
+                <span id="angle-display" style="color:#fff; font-size:11px;">0.0°</span>
+            </h3>
+            
+            <div class="slider-label" style="margin-top: 5px;"><span>Fine-Tune Rotation Angle</span></div>
+            <div class="fine-tune-box">
+                <button class="fine-btn" onclick="rotateSelected(-1)">-1.0°</button>
+                <button class="fine-btn" onclick="rotateSelected(-0.1)">-0.1°</button>
+                <button class="fine-btn" onclick="rotateSelected(0.1)">+0.1°</button>
+                <button class="fine-btn" onclick="rotateSelected(1)">+1.0°</button>
+            </div>
 
-        <div class="controls-info">
-            <strong>[Controls]</strong><br>
-            • Drag & Drop: Left Click<br>
-            • Fine Rotate: Mouse Wheel (0.5°)<br>
-            • Delete Object: Press [Delete] key
+            <div class="slider-label" style="margin-top:8px;"><span>Scale Width</span></div>
+            <input type="range" id="objW" min="20" max="300" value="100" oninput="updateSelected()">
+            <div class="slider-label"><span>Scale Height</span></div>
+            <input type="range" id="objH" min="20" max="300" value="100" oninput="updateSelected()">
+            <div class="tool-btn" onclick="deleteSelected()" style="background:#401515; border-color:#722; width:100%; margin-top:5px;">Delete Object</div>
+        </div>
+
+        <div class="tool-group">
+            <div class="tool-btn" onclick="clearAll()" style="background-color: #2a1515; color: #ff5555; border-color: #4a2222; width:100%;">Clear Workspace</div>
         </div>
     </div>
 
     <div id="canvas-container">
-        <canvas id="simCanvas"></canvas>
-
-        <div id="python-terminal">
-            <div class="term-header">
-                <span>💻 Embedded Python IDE (IoT Controller)</span>
-                <span style="color:#ef4444; cursor:pointer; font-weight:bold;" onclick="document.getElementById('python-terminal').style.display='none'">[X]</span>
-            </div>
-            <textarea id="pyCode" spellcheck="false"># Python IoT Script v1.0
-def on_laser_signal(sensor):
-    if sensor.is_triggered():
-        print("🚨 [BEEP!] Laser Detected! Triggering Alarm.")
-        set_circuit_relay(False) # Turn off main circuit
-    else:
-        set_circuit_relay(True)  # Keep circuit active</textarea>
-            <div id="pyOut" class="term-out">System: Initialization complete. Waiting for laser...</div>
-        </div>
+        <canvas id="mainCanvas"></canvas>
     </div>
 
     <script>
-        const canvas = document.getElementById('simCanvas');
+        const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
-        
-        let objects = [];
+        let w, h;
+
+        let optics = []; 
         let selectedObj = null;
+        let lightMode = 1; 
         let isDragging = false;
-        let dragOffset = { x: 0, y: 0 };
 
-        function resizeCanvas() {
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
+        function resize() {
+            w = canvas.width = canvas.parentElement.clientWidth;
+            h = canvas.height = canvas.parentElement.clientHeight;
+            draw();
         }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        window.addEventListener('resize', resize);
 
-        // Infinite Spawner Logic
-        function spawn(type) {
-            let obj = {
-                id: Date.now() + Math.random(),
-                type: type,
-                x: canvas.width / 2 + (Math.random() * 60 - 30),
-                y: canvas.height / 2 + (Math.random() * 60 - 30),
-                angle: 0,
-                width: 70,
-                height: 50,
-                triggered: false
-            };
+        function changeLight(mode) {
+            lightMode = mode;
+            document.querySelectorAll('[id^="l-"]').forEach(b => b.classList.remove('active'));
+            document.getElementById(mode === 'RGB' ? 'l-rgb' : 'l-' + mode).classList.add('active');
+            draw();
+        }
 
-            // Custom dimensions per item type
-            if(type.includes('lens') || type.includes('mirror')) { obj.width = 16; obj.height = 90; }
-            else if(type.includes('prism-')) { obj.width = 65; obj.height = 65; }
-            else if(type === 'light-sensor') { obj.width = 45; obj.height = 45; }
-            else if(type === 'computer') { obj.width = 85; obj.height = 60; }
-            else if(type === 'battery') { obj.width = 55; obj.height = 40; }
+        function addDevice(type) {
+            let obj = { type: type, x: w / 2, y: h / 2, ow: 100, oh: 100, angle: 0 };
+            optics.push(obj);
+            selectObject(obj);
+            draw();
+        }
 
-            objects.push(obj);
+        function selectObject(obj) {
             selectedObj = obj;
-        }
-
-        // Ray Tracing Logic & Physics Simulation
-        function traceLasers() {
-            let beams = [];
-
-            // 1. Generate initial light beams from sources
-            objects.forEach(obj => {
-                if (obj.type.startsWith('box-') || obj.type.startsWith('laser-')) {
-                    let count = 1;
-                    let color = '#ff3333';
-                    if (obj.type === 'box-3') count = 3;
-                    if (obj.type === 'box-5') count = 5;
-                    if (obj.type === 'laser-rgb') color = 'rgb';
-
-                    for (let i = 0; i < count; i++) {
-                        let offsetDir = (i - (count - 1) / 2) * 14;
-                        let rad = obj.angle * Math.PI / 180;
-                        let startX = obj.x + Math.cos(rad) * (obj.width / 2);
-                        let startY = obj.y + Math.sin(rad) * (obj.width / 2);
-                        
-                        if (count > 1) {
-                            startX += Math.sin(rad) * offsetDir;
-                            startY -= Math.cos(rad) * offsetDir;
-                        }
-
-                        let beamColors = color === 'rgb' ? ['#ff3333', '#33ff33', '#3333ff'] : [color];
-                        beamColors.forEach((c, idx) => {
-                            let spread = color === 'rgb' ? (idx - 1) * 3.5 : 0;
-                            beams.push({ x: startX, y: startY, angle: obj.angle + spread, color: c });
-                        });
-                    }
-                }
-            });
-
-            // Reset sensor states before collision math
-            objects.forEach(o => { if(o.type === 'light-sensor') o.triggered = false; });
-
-            // 2. Dynamic Ray Collision & Rendering
-            beams.forEach(beam => {
-                ctx.lineWidth = 2.5;
-                ctx.strokeStyle = beam.color;
-                ctx.shadowBlur = 8;
-                ctx.shadowColor = beam.color;
-
-                ctx.beginPath();
-                ctx.moveTo(beam.x, beam.y);
-
-                let rad = beam.angle * Math.PI / 180;
-                let endX = beam.x + Math.cos(rad) * 2000;
-                let endY = beam.y + Math.sin(rad) * 2000;
-
-                // Simple Ray-Casting box checks
-                objects.forEach(obj => {
-                    if (obj.type === 'light-sensor') {
-                        let dist = Math.hypot(obj.x - (beam.x + Math.cos(rad) * 150), obj.y - (beam.y + Math.sin(rad) * 150));
-                        if (dist < 55) {
-                            obj.triggered = true;
-                            endX = obj.x - Math.cos(rad) * 10;
-                            endY = obj.y - Math.sin(rad) * 10;
-                        }
-                    }
-                    if (obj.type.includes('prism') || obj.type.includes('lens')) {
-                        let dist = Math.hypot(obj.x - (beam.x + Math.cos(rad) * 120), obj.y - (beam.y + Math.sin(rad) * 120));
-                        if (dist < 45) {
-                            endX = obj.x;
-                            endY = obj.y;
-                            // Visual placeholder for refraction point
-                        }
-                    }
-                });
-
-                ctx.lineTo(endX, endY);
-                ctx.stroke();
-            });
-            ctx.shadowBlur = 0; // Reset canvas filter
-        }
-
-        // Draw Loop
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Tech Laboratory Grid Line Background
-            ctx.strokeStyle = '#16161a';
-            ctx.lineWidth = 1;
-            for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
-            for(let j=0; j<canvas.height; j+=40) { ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(canvas.width,j); ctx.stroke(); }
-
-            traceLasers();
-
-            // Render Modules
-            objects.forEach(obj => {
-                ctx.save();
-                ctx.translate(obj.x, obj.y);
-                ctx.rotate(obj.angle * Math.PI / 180);
-
-                // Highlight Selection Boundary
-                if (obj === selectedObj) {
-                    ctx.strokeStyle = '#00adb5';
-                    ctx.lineWidth = 1.5;
-                    ctx.strokeRect(-obj.width/2 - 5, -obj.height/2 - 5, obj.width + 10, obj.height + 10);
-                }
-
-                // Render styles based on UI asset type
-                if (obj.type.startsWith('box-') || obj.type.startsWith('laser-')) {
-                    ctx.fillStyle = '#27272a';
-                    ctx.fillRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    ctx.fillStyle = '#a1a1aa';
-                    ctx.fillRect(obj.width/2 - 6, -6, 6, 12);
-                } 
-                else if (obj.type.startsWith('prism-')) {
-                    ctx.fillStyle = 'rgba(14, 165, 233, 0.2)';
-                    ctx.strokeStyle = '#38bdf8';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    if(obj.type === 'prism-triangle' || obj.type === 'prism-pyramid') {
-                        ctx.moveTo(0, -obj.height/2); ctx.lineTo(obj.width/2, obj.height/2); ctx.lineTo(-obj.width/2, obj.height/2);
-                    } else if(obj.type === 'prism-rectangle') {
-                        ctx.rect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    } else if(obj.type === 'prism-circle' || obj.type === 'prism-cone') {
-                        ctx.arc(0, 0, obj.width/2, 0, Math.PI*2);
-                    } else if(obj.type === 'prism-trapezoid') {
-                        ctx.moveTo(-obj.width/3, -obj.height/2); ctx.lineTo(obj.width/3, -obj.height/2);
-                        ctx.lineTo(obj.width/2, obj.height/2); ctx.lineTo(-obj.width/2, obj.height/2);
-                    }
-                    ctx.closePath(); ctx.fill(); ctx.stroke();
-                } 
-                else if (obj.type.includes('lens') || obj.type.includes('mirror')) {
-                    ctx.strokeStyle = obj.type.includes('mirror') ? '#fbbf24' : '#34d399';
-                    ctx.lineWidth = 4;
-                    ctx.beginPath();
-                    ctx.moveTo(0, -obj.height/2);
-                    ctx.quadraticCurveTo(obj.type.includes('convex') ? 14 : -14, 0, 0, obj.height/2);
-                    ctx.stroke();
-                }
-                else if (obj.type === 'light-sensor') {
-                    ctx.fillStyle = obj.triggered ? '#ef4444' : '#1f2937';
-                    ctx.fillRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    ctx.strokeStyle = '#f3f4f6';
-                    ctx.strokeRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    if(obj.triggered) {
-                        ctx.fillStyle = '#fff'; ctx.font = 'bold 9px sans-serif';
-                        ctx.fillText("⚡ SIGNAL", -20, 3);
-                    }
-                }
-                else if (obj.type === 'battery') {
-                    ctx.fillStyle = '#ea580c';
-                    ctx.fillRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    ctx.fillStyle = '#fff'; ctx.fillRect(obj.width/2, -5, 3, 10);
-                }
-                else if (obj.type === 'computer') {
-                    ctx.fillStyle = '#0f172a';
-                    ctx.fillRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    ctx.strokeStyle = '#38bdf8'; ctx.strokeRect(-obj.width/2, -obj.height/2, obj.width, obj.height);
-                    ctx.fillStyle = '#22c55e'; ctx.font = '10px monospace'; ctx.fillText("Python OS", -26, 4);
-                }
-
-                ctx.restore();
-            });
-
-            // Live Python Terminal Logs Output Simulation
-            let anySensor = objects.find(o => o.type === 'light-sensor');
-            let termElement = document.getElementById('pyOut');
-            if(anySensor && termElement) {
-                if(anySensor.triggered) {
-                    termElement.innerHTML = "<span style='color:#ef4444;'>🚨 [Python Script]: BEEP! Laser active on Sensor.<br>Circuit Relay Interrupted -> [POWER OFF]</span>";
-                } else {
-                    termElement.innerHTML = "💡 [Python Script]: Monitoring IoT Bus... Status OK.<br>Circuit Relay Active -> [POWER ON]";
-                }
+            if(obj) {
+                document.getElementById('control-panel').style.display = 'block';
+                document.getElementById('objW').value = obj.ow;
+                document.getElementById('objH').value = obj.oh;
+                updateAngleDisplay();
+            } else {
+                document.getElementById('control-panel').style.display = 'none';
             }
-
-            requestAnimationFrame(draw);
         }
 
-        // Mouse Controls & Ultra-Fine 0.5-Degree Wheel Rotation Math
+        function updateSelected() {
+            if(selectedObj) {
+                selectedObj.ow = parseInt(document.getElementById('objW').value);
+                selectedObj.oh = parseInt(document.getElementById('objH').value);
+                draw();
+            }
+        }
+
+        // Real-time Precision Degree Calculations
+        function rotateSelected(deg) {
+            if(selectedObj) {
+                selectedObj.angle += (deg * Math.PI / 180);
+                updateAngleDisplay();
+                draw();
+            }
+        }
+
+        function updateAngleDisplay() {
+            if(selectedObj) {
+                let deg = (selectedObj.angle * 180 / Math.PI) % 360;
+                if(deg < 0) deg += 360;
+                document.getElementById('angle-display').innerText = deg.toFixed(1) + "°";
+            }
+        }
+
+        function deleteSelected() {
+            if(selectedObj) { optics = optics.filter(o => o !== selectedObj); selectObject(null); draw(); }
+        }
+
+        function clearAll() { optics = []; selectObject(null); draw(); }
+
+        // --- Mouse Operations ---
         canvas.addEventListener('mousedown', (e) => {
             const rect = canvas.getBoundingClientRect();
-            const mX = e.clientX - rect.left;
-            const mY = e.clientY - rect.top;
-
-            selectedObj = null;
-            for (let i = objects.length - 1; i >= 0; i--) {
-                let obj = objects[i];
-                if (Math.abs(mX - obj.x) < obj.width/2 && Math.abs(mY - obj.y) < obj.height/2) {
-                    selectedObj = obj;
-                    isDragging = true;
-                    dragOffset.x = mX - obj.x;
-                    dragOffset.y = mY - obj.y;
-                    
-                    if(obj.type === 'computer') {
-                        document.getElementById('python-terminal').style.display = 'block';
-                    }
-                    break;
-                }
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            let hit = false;
+            for(let i = optics.length - 1; i >= 0; i--) {
+                let o = optics[i];
+                if(Math.hypot(o.x - mx, o.y - my) < Math.max(o.ow, o.oh) / 1.5) { selectObject(o); isDragging = true; hit = true; break; }
             }
+            if(!hit) selectObject(null);
+            draw();
         });
 
         canvas.addEventListener('mousemove', (e) => {
-            if (isDragging && selectedObj) {
+            if(isDragging && selectedObj) {
                 const rect = canvas.getBoundingClientRect();
-                selectedObj.x = e.clientX - rect.left - dragOffset.x;
-                selectedObj.y = e.clientY - rect.top - dragOffset.y;
+                selectedObj.x = e.clientX - rect.left; selectedObj.y = e.clientY - rect.top;
+                draw();
             }
         });
 
-        window.addEventListener('mouseup', () => { isDragging = false; });
-
-        // Wheel listener: 0.5 degree fine rotation increments
+        window.addEventListener('mouseup', () => isDragging = false);
+        
+        // High Precision Wheel System (0.01 Radian Scale Tuning)
         canvas.addEventListener('wheel', (e) => {
-            if (selectedObj) {
-                e.preventDefault();
-                let deltaDir = e.deltaY > 0 ? 1 : -1;
-                selectedObj.angle += deltaDir * 0.5; // Exactly 0.5-degree increments!
+            if(selectedObj) { 
+                e.preventDefault(); 
+                selectedObj.angle += e.deltaY * 0.0001; 
+                updateAngleDisplay();
+                draw(); 
             }
         }, { passive: false });
 
-        // Global Key Delete Handler
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Delete' && selectedObj) {
-                objects = objects.filter(o => o.id !== selectedObj.id);
-                selectedObj = null;
-            }
-        });
+        // --- Boundaries Surface Solver ---
+        function getBoundaries(obj, baseN) {
+            let pts = [];
+            let sw = obj.ow, sh = obj.oh;
 
-        // Initialize Loop
-        draw();
+            switch(obj.type) {
+                case 'prism_tri': pts = [{x: 0, y: -sh*0.58}, {x: sw*0.5, y: sh*0.29}, {x: -sw*0.5, y: sh*0.29}]; break;
+                case 'prism_right': pts = [{x: -sw*0.5, y: -sh*0.5}, {x: sw*0.5, y: sh*0.5}, {x: -sw*0.5, y: sh*0.5}]; break;
+                case 'pyramid_short': pts = [{x: 0, y: -sh*0.3}, {x: sw*0.5, y: sh*0.3}, {x: sw*0.25, y: sh*0.3}, {x:-sw*0.25, y:sh*0.3}, {x: -sw*0.5, y: sh*0.3}]; break;
+                case 'pyramid_long': pts = [{x: 0, y: -sh*0.7}, {x: sw*0.4, y: sh*0.6}, {x: -sw*0.4, y: sh*0.6}]; break;
+                case 'cone_short': pts = [{x: 0, y: -sh*0.3}, {x: sw*0.4, y: sh*0.3}, {x: -sw*0.4, y: sh*0.3}]; break;
+                case 'cone_long': pts = [{x: 0, y: -sh*0.8}, {x: sw*0.3, y: sh*0.5}, {x: -sw*0.3, y: sh*0.5}]; break;
+                case 'trapezoid': pts = [{x: -sw*0.25, y: -sh*0.4}, {x: sw*0.25, y: -sh*0.4}, {x: sw*0.5, y: sh*0.4}, {x: -sw*0.5, y: sh*0.4}]; break;
+                case 'rhombus': pts = [{x: 0, y: -sh*0.5}, {x: sw*0.4, y: 0}, {x: 0, y: sh*0.5}, {x: -sw*0.4, y: 0}]; break;
+                case 'mirror_flat': pts = [{x: 0, y: -sh*0.5}, {x: 0, y: sh*0.5}]; break;
+                case 'circular_block': 
+                case 'convex':
+                case 'concave':
+                case 'biconvex':
+                case 'biconcave':
+                case 'mirror_convex':
+                case 'mirror_concave':
+                    let segs = [];
+                    let steps = 18;
+                    let lastPt = null;
+                    for (let i = 0; i <= steps; i++) {
+                        let t = (i / steps) * Math.PI - Math.PI/2;
+                        let hx = 0, hy = (i/steps)*sh - sh/2;
+                        if(obj.type === 'circular_block') { hx = Math.cos(t)*sw*0.5; hy = Math.sin(t)*sh*0.5; }
+                        else if(obj.type === 'convex') { hx = (Math.cos(t) * sw * 0.3); }
+                        else if(obj.type === 'concave') { hx = -(Math.cos(t) * sw * 0.2) + sw*0.2; }
+                        else if(obj.type === 'biconvex') { hx = (Math.cos(t) * sw * 0.35); }
+                        else if(obj.type === 'biconcave') { hx = -(Math.cos(t) * sw * 0.25) + sw*0.2; }
+                        else if(obj.type === 'mirror_convex') { hx = (Math.cos(t) * sw * 0.4); }
+                        else if(obj.type === 'mirror_concave') { hx = -(Math.cos(t) * sw * 0.4); }
+
+                        let rx = hx * Math.cos(obj.angle) - hy * Math.sin(obj.angle) + obj.x;
+                        let ry = hx * Math.sin(obj.angle) + hy * Math.cos(obj.angle) + obj.y;
+                        let curr = {x: rx, y: ry};
+                        if (lastPt) {
+                            let dx = curr.x - lastPt.x, dy = curr.y - lastPt.y, l = Math.hypot(dx,dy);
+                            let isMirror = obj.type.startsWith('mirror');
+                            segs.push({p1: lastPt, p2: curr, normal: {x: -dy/l, y: dx/l}, type: isMirror ? 'reflect' : 'refract', n: baseN});
+                        }
+                        lastPt = curr;
+                    }
+                    if(obj.type === 'biconvex' || obj.type === 'biconcave' || obj.type === 'convex' || obj.type === 'concave') {
+                        let firstPt = segs[0].p1, finalPt = segs[segs.length-1].p2;
+                        let backPts = [];
+                        for(let i=steps; i>=0; i--) {
+                            let t = (i / steps) * Math.PI - Math.PI/2;
+                            let hy = (i/steps)*sh - sh/2, hx = 0;
+                            if(obj.type === 'biconvex') hx = -(Math.cos(t) * sw * 0.35);
+                            else if(obj.type === 'biconcave') hx = (Math.cos(t) * sw * 0.25) - sw*0.2;
+                            else if(obj.type === 'convex') hx = -sw*0.1;
+                            else if(obj.type === 'concave') hx = sw*0.3;
+
+                            let rx = hx * Math.cos(obj.angle) - hy * Math.sin(obj.angle) + obj.x;
+                            let ry = hx * Math.sin(obj.angle) + hy * Math.cos(obj.angle) + obj.y;
+                            backPts.push({x: rx, y: ry});
+                        }
+                        let bp = backPts[0];
+                        let dx = bp.x - finalPt.x, dy = bp.y - finalPt.y, l = Math.hypot(dx,dy);
+                        segs.push({p1: finalPt, p2: bp, normal: {x:-dy/l, y:dx/l}, type: 'refract', n:baseN});
+                        for(let i=0; i<backPts.length-1; i++) {
+                            let p1 = backPts[i], p2 = backPts[i+1];
+                            let rdx = p2.x - p1.x, rdy = p2.y - p1.y, rl = Math.hypot(rdx,rdy);
+                            segs.push({p1: p1, p2: p2, normal: {x: -rdy/rl, y: rdx/rl}, type: 'refract', n: baseN});
+                        }
+                        let ep = backPts[backPts.length-1];
+                        let fdx = firstPt.x - ep.x, fdy = firstPt.y - ep.y, fl = Math.hypot(fdx,fdy);
+                        segs.push({p1: ep, p2: firstPt, normal: {x:-fdy/fl, y:fdx/fl}, type: 'refract', n:baseN});
+                    }
+                    return segs;
+            }
+
+            let trans = pts.map(p => ({
+                x: p.x * Math.cos(obj.angle) - p.y * Math.sin(obj.angle) + obj.x,
+                y: p.x * Math.sin(obj.angle) + p.y * Math.cos(obj.angle) + obj.y
+            }));
+
+            let segs = [];
+            for(let i=0; i<trans.length; i++) {
+                let p1 = trans[i], p2 = trans[(i+1)%trans.length];
+                if(obj.type === 'mirror_flat' && i === 1) break;
+                let dx = p2.x - p1.x, dy = p2.y - p1.y, len = Math.hypot(dx, dy);
+                segs.push({p1: p1, p2: p2, normal: {x: -dy/len, y: dx/len}, type: obj.type.startsWith('mirror') ? 'reflect' : 'refract', n: baseN});
+            }
+            return segs;
+        }
+
+        function getIntersection(ray, seg) {
+            const x1 = seg.p1.x, y1 = seg.p1.y, x2 = seg.p2.x, y2 = seg.p2.y;
+            const x3 = ray.x, y3 = ray.y, dx = ray.dx, dy = ray.dy;
+            const det = (x2 - x1) * dy - (y2 - y1) * dx;
+            if (Math.abs(det) < 1e-6) return null;
+            const t = ((x3 - x1) * dy - (y3 - y1) * dx) / det;
+            const u = ((x3 - x1) * (y2 - y1) - (y3 - y1) * (x2 - x1)) / det;
+            if (t >= 0 && t <= 1 && u > 0.05) return { x: x1 + t * (x2 - x1), y: y1 + t * (y2 - y1), dist: u };
+            return null;
+        }
+
+        // --- Optics Physics Computations Engine ---
+        function traceRay(x, y, dx, dy, color, baseN, depth = 0) {
+            if (depth > 32) return;
+
+            let closestHit = null, closestDist = Infinity, closestSeg = null;
+
+            for (let obj of optics) {
+                let segs = getBoundaries(obj, baseN);
+                for (let seg of segs) {
+                    let hit = getIntersection({x, y, dx, dy}, seg);
+                    if (hit && hit.dist < closestDist) { closestDist = hit.dist; closestHit = hit; closestSeg = seg; }
+                }
+            }
+
+            let endX = x + dx * (closestDist === Infinity ? 3000 : closestDist);
+            let endY = y + dy * (closestDist === Infinity ? 3000 : closestDist);
+
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(endX, endY);
+            ctx.strokeStyle = color; ctx.lineWidth = 2.2;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0.08, 1.0 - (depth * 0.03));
+            ctx.shadowBlur = 6; ctx.shadowColor = color;
+            ctx.stroke(); ctx.restore();
+
+            if (closestHit && closestSeg) {
+                let nx = closestSeg.normal.x, ny = closestSeg.normal.y;
+                let dot = dx * nx + dy * ny;
+                let sign = 1;
+                if (dot > 0) { nx = -nx; ny = -ny; dot = -dot; sign = -1; }
+
+                if (closestSeg.type === 'reflect') {
+                    let rx = dx - 2 * dot * nx; let ry = dy - 2 * dot * ny;
+                    traceRay(closestHit.x + rx*0.05, closestHit.y + ry*0.05, rx, ry, color, baseN, depth + 1);
+                } else if (closestSeg.type === 'refract') {
+                    let cos1 = -dot;
+                    let eta = (sign === 1) ? (1.0 / closestSeg.n) : (closestSeg.n / 1.0);
+                    let k = 1.0 - eta * eta * (1.0 - cos1 * cos1);
+                    
+                    if (k < 0) {
+                        let rx = dx - 2 * dot * nx; let ry = dy - 2 * dot * ny;
+                        traceRay(closestHit.x + rx*0.05, closestHit.y + ry*0.05, rx, ry, color, baseN, depth + 1);
+                    } else {
+                        let cos2 = Math.sqrt(k);
+                        let rx = eta * dx + (eta * cos1 - cos2) * nx;
+                        let ry = eta * dy + (eta * cos1 - cos2) * ny;
+                        traceRay(closestHit.x + rx*0.05, closestHit.y + ry*0.05, rx, ry, color, baseN, depth + 1);
+                    }
+                }
+            }
+        }
+
+        // --- Core Paint View Renderer ---
+        function draw() {
+            ctx.fillStyle = '#030305'; ctx.fillRect(0, 0, w, h);
+
+            optics.forEach(o => {
+                ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.angle);
+                
+                if(o === selectedObj) {
+                    ctx.strokeStyle = 'rgba(77, 184, 255, 0.4)'; ctx.lineWidth = 1;
+                    ctx.strokeRect(-o.ow/1.3, -o.oh/1.3, o.ow*1.6, o.oh*1.6);
+                }
+
+                let isM = o.type.startsWith('mirror');
+                ctx.fillStyle = isM ? '#3a3a4a' : 'rgba(100, 220, 255, 0.12)';
+                ctx.strokeStyle = isM ? '#8a8a9a' : '#4db8ff'; ctx.lineWidth = 1.5;
+
+                ctx.beginPath();
+                let sw = o.ow, sh = o.oh;
+                if(o.type === 'prism_tri') { ctx.moveTo(0, -sh*0.58); ctx.lineTo(sw*0.5, sh*0.29); ctx.lineTo(-sw*0.5, sh*0.29); ctx.closePath(); }
+                else if(o.type === 'prism_right') { ctx.moveTo(-sw*0.5, -sh*0.5); ctx.lineTo(sw*0.5, sh*0.5); ctx.lineTo(-sw*0.5, sh*0.5); ctx.closePath(); }
+                else if(o.type === 'pyramid_short') { ctx.moveTo(0, -sh*0.3); ctx.lineTo(sw*0.5, sh*0.3); ctx.lineTo(-sw*0.5, sh*0.3); ctx.closePath(); }
+                else if(o.type === 'pyramid_long') { ctx.moveTo(0, -sh*0.7); ctx.lineTo(sw*0.4, sh*0.6); ctx.lineTo(-sw*0.4, sh*0.6); ctx.closePath(); }
+                else if(o.type === 'cone_short') { ctx.moveTo(0, -sh*0.3); ctx.lineTo(sw*0.4, sh*0.3); ctx.lineTo(-sw*0.4, sh*0.3); ctx.closePath(); }
+                else if(o.type === 'cone_long') { ctx.moveTo(0, -sh*0.8); ctx.lineTo(sw*0.3, sh*0.5); ctx.lineTo(-sw*0.3, sh*0.5); ctx.closePath(); }
+                else if(o.type === 'trapezoid') { ctx.moveTo(-sw*0.25, -sh*0.4); ctx.lineTo(sw*0.25, -sh*0.4); ctx.lineTo(sw*0.5, sh*0.4); ctx.lineTo(-sw*0.5, sh*0.4); ctx.closePath(); }
+                else if(o.type === 'rhombus') { ctx.moveTo(0, -sh*0.5); ctx.lineTo(sw*0.4, 0); ctx.lineTo(0, sh*0.5); ctx.lineTo(-sw*0.4, 0); ctx.closePath(); }
+                else if(o.type === 'mirror_flat') { ctx.rect(-3, -sh*0.5, 6, sh); }
+                else if(o.type === 'circular_block') { ctx.ellipse(0,0, sw*0.5, sh*0.5, 0, 0, Math.PI*2); }
+                else {
+                    let steps = 18;
+                    for(let i=0; i<=steps; i++) {
+                        let t = (i/steps)*Math.PI - Math.PI/2, hx = 0, hy = (i/steps)*sh - sh/2;
+                        if(o.type === 'convex') hx = Math.cos(t)*sw*0.3;
+                        else if(o.type === 'concave') hx = -Math.cos(t)*sw*0.2 + sw*0.2;
+                        else if(o.type === 'biconvex') hx = Math.cos(t)*sw*0.35;
+                        else if(o.type === 'biconcave') hx = -Math.cos(t)*sw*0.25 + sw*0.2;
+                        else if(o.type === 'mirror_convex') hx = Math.cos(t)*sw*0.4;
+                        else if(o.type === 'mirror_concave') hx = -Math.cos(t)*sw*0.4;
+                        if(i===0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
+                    }
+                    if(o.type==='biconvex'||o.type==='biconcave'||o.type==='convex'||o.type==='concave') {
+                        for(let i=steps; i>=0; i--) {
+                            let t = (i/steps)*Math.PI - Math.PI/2, hy = (i/steps)*sh - sh/2, hx = 0;
+                            if(o.type === 'biconvex') hx = -Math.cos(t)*sw*0.35;
+                            else if(o.type === 'biconcave') hx = Math.cos(t)*sw*0.25 - sw*0.2;
+                            else if(o.type === 'convex') hx = -sw*0.1;
+                            else if(o.type === 'concave') hx = sw*0.3;
+                            ctx.lineTo(hx, hy);
+                        }
+                    }
+                }
+                ctx.fill(); ctx.stroke(); ctx.restore();
+            });
+
+            const ly = parseInt(document.getElementById('lightY').value);
+            const la = parseInt(document.getElementById('lightAngle').value) * Math.PI / 180;
+            const ldx = Math.cos(la), ldy = Math.sin(la);
+
+            ctx.save(); ctx.globalCompositeOperation = 'screen';
+            if (lightMode === 1) { traceRay(5, ly, ldx, ldy, '#ff3333', 1.55); }
+            else if (lightMode === 3) { for(let i=-1; i<=1; i++) traceRay(5, ly + i*25, ldx, ldy, '#33ff33', 1.55); }
+            else if (lightMode === 5) { for(let i=-2; i<=2; i++) traceRay(5, ly + i*18, ldx, ldy, '#00dfff', 1.55); }
+            else if (lightMode === 'RGB') {
+                traceRay(5, ly, ldx, ldy, '#ff3333', 1.42); 
+                traceRay(5, ly, ldx, ldy, '#ffaa00', 1.47);
+                traceRay(5, ly, ldx, ldy, '#33ff33', 1.52);
+                traceRay(5, ly, ldx, ldy, '#0055ff', 1.58);
+                traceRay(5, ly, ldx, ldy, '#aa33ff', 1.64);
+            }
+            ctx.restore();
+        }
+
+        resize();
     </script>
 </body>
 </html>
