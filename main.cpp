@@ -1,0 +1,103 @@
+#include <SFML/Graphics.hpp>
+#include <vector>
+#include <cmath>
+#include <iostream>
+
+// 1. 빛(레이저) 구조체 정의
+struct Laser {
+    sf::Vector2f startPos;
+    sf::Vector2f direction;
+    sf::Color color;
+    float intensity; // 빛의 세기
+};
+
+// 2. 도구 상자에서 꺼낼 수 있는 기본 오브젝트 클래스
+class SimulationObject {
+public:
+    sf::ConvexShape shape;
+    float rotation = 0.0f;
+    bool isDragged = false;
+    std::string type; // "Prism", "Sensor", "Battery" 등
+
+    SimulationObject(std::string type) : type(type) {}
+
+    // 정교하게 0.5도씩 회전하는 함수
+    void rotateFine(bool clockwise) {
+        float angle = clockwise ? 0.5f : -0.5f;
+        rotation += angle;
+        shape.setRotation(rotation);
+    }
+};
+
+// 3. 메인 시뮬레이터 엔진
+class PrismSimulator {
+private:
+    sf::RenderWindow window;
+    std::vector<SimulationObject> placedObjects; // 화면에 배치된 오브젝트들
+    std::vector<Laser> lasers;                   // 화면의 레이저들
+
+public:
+    PrismSimulator() {
+        window.create(sf::VideoMode(1200, 800), "Prism Simulator - By gamecat404");
+    }
+
+    void handleEvents() {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed)
+                window.close();
+
+            // [마우스 드래그 및 정교한 회전 로직 예시]
+            if (event.type == sf::Event::MouseWheelScrolled) {
+                // 마우스 휠을 돌리면 선택된 오브젝트가 0.5도씩 정교하게 회전
+                if (!placedObjects.empty()) {
+                    if (event.mouseWheelScroll.delta > 0) {
+                        placedObjects.back().rotateFine(true);
+                    } else {
+                        placedObjects.back().rotateFine(false);
+                    }
+                }
+            }
+        }
+    }
+
+    // 레이저가 프리즘이나 거울에 부딪혔을 때 계산하는 핵심 함수
+    void calculatePhysics() {
+        // TODO: 스넬의 법칙(Snell's Law) 및 반사 법칙 공식을 이용해 
+        // 레이저의 경로를 재계산하고 센서에 닿았는지 판정하는 로직 추가 필요
+    }
+
+    void render() {
+        window.clear(sf::Color(10, 10, 15)); // 어두운 실험실 배경
+
+        // 오브젝트들 그리기
+        for (auto& obj : placedObjects) {
+            window.draw(obj.shape);
+        }
+
+        // 레이저 광선 그리기
+        for (auto& laser : lasers) {
+            sf::Vertex line[] = {
+                sf::Vertex(laser.startPos, laser.color),
+                sf::Vertex(laser.startPos + laser.direction * 1000.0f, laser.color) // 임시 직선
+            };
+            window.draw(line, 2, sf::Lines);
+        }
+
+        window.display();
+    }
+
+    void run() {
+        while (window.isOpen()) {
+            handleEvents();
+            calculatePhysics();
+            render();
+        }
+    }
+};
+
+int main() {
+    PrismSimulator simulator;
+    simulator.run();
+    return 0;
+}
