@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra-Precision Physics Optics Lab</title>
+    <style>
+        body { margin: 0; display: flex; font-family: 'Segoe UI', Arial, sans-serif; background-color: #0a0a0c; color: #e0e0e0; height: 100vh; overflow: hidden; }
+        #sidebar { width: 340px; background-color: #121216; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; border-right: 2px solid #22222a; z-index: 10; overflow-y: auto; }
+        #canvas-container { flex-grow: 1; position: relative; background-color: #030305; }
+        canvas { display: block; width: 100%; height: 100%; }
+        h2, h3 { margin: 0; color: #4db8ff; }
+        h3 { font-size: 12px; text-transform: uppercase; color: #777; margin-top: 5px; }
+        .tool-group { background: #1a1a22; padding: 10px; border-radius: 6px; border: 1px solid #2a2a35; }
+        .grid-box { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 5px; }
+        .tool-btn { background-color: #252530; color: #fff; border: 1px solid #353545; padding: 8px; cursor: pointer; border-radius: 4px; text-align: center; transition: 0.15s; font-weight: bold; font-size: 11px; }
+        .tool-btn:hover { background-color: #353545; border-color: #4db8ff; }
+        .active { background-color: #007acc !important; border-color: #4db8ff !important; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; color: #bbb; }
+        input[type="range"] { width: 100%; margin-bottom: 8px; accent-color: #4db8ff; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h2>Microscope Simulator</h2>
+        <p style="font-size: 10px; color:#aaa; margin:0;">[마우스 드래그]: 렌즈 이동 및 배치</p>
+        <p style="font-size: 10px; color:#666; margin:0;">[마우스 휠]: 선택한 렌즈 미세 회전</p>
+        
+        <div class="tool-group">
+            <h3>🔬 Microscope Controls</h3>
+            <div class="slider-label" style="margin-top:5px;"><span>실험용 빛 퍼짐 각도 (조리개)</span></div>
+            <input type="range" id="coneAngle" min="5" max="40" value="20" oninput="draw()">
+            <div class="slider-label"><span>표본 크기 조절 (상 확대용)</span></div>
+            <input type="range" id="sampleSize" min="10" max="80" value="40" oninput="draw()">
+        </div>
+
+        <div class="tool-group">
+            <h3>🔍 Lenses & Optics</h3>
+            <div class="grid-box">
+                <div class="tool-btn" onclick="addDevice('biconvex')">Biconvex (볼록렌즈)</div>
+                <div class="tool-btn" onclick="addDevice('convex')">Convex (평볼록)</div>
+                <div class="tool-btn" onclick="addDevice('circular_block')">Glass Cylinder</div>
+                <div class="tool-btn" onclick="addDevice('prism_tri')">Prism Block</div>
+            </div>
+        </div>
+
+        <div class="tool-group" id="control-panel" style="display:none; border-color: #4db8ff;">
+            <h3 style="color:#4db8ff;">⚙️ 선택된 렌즈 제어</h3>
+            <div class="slider-label" style="margin-top:8px;"><span>렌즈 두께 (Width)</span></div>
+            <input type="range" id="objW" min="20" max="250" value="80" oninput="updateSelected()">
+            <div class="slider-label"><span>렌즈 높이 (Height)</span></div>
+            <input type="range" id="objH" min="40" max="350" value="160" oninput="updateSelected()">
+            <div class="tool-btn" onclick="deleteSelected()" style="background:#401515; border-color:#722; width:100%; margin-top:5px;">렌즈 삭제</div>
+        </div>
+
+        <div class="tool-group">
+            <div class="tool-btn" onclick="clearAll()" style="background-color: #2a1515; color: #ff5555; border-color: #4a2222; width:100%;">실험실 초기화</div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="mainCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        let w, h;
+
+        let optics = []; 
+        let selectedObj = null;
+        let isDragging = false;
+
+        // 표본(삼각형 슬라이드) 위치 고정 세팅
+        let sample = { x: 180, y: 350 };
+
+        function resize() {
+            w = canvas.width = canvas.parentElement.clientWidth;
+            h = canvas.height = canvas.parentElement.clientHeight;
+            sample.y = h / 2;
+            draw();
+        }
+        window.addEventListener('resize', resize);
+
+        function addDevice(type) {
+            let obj = { type: type, x: w / 2, y: h / 2, ow: 60, oh: 180, angle: 0 };
+            optics.push(obj);
+            selectObject(obj);
+            draw();
+        }
+
+        function selectObject(obj) {
+            selectedObj = obj;
+            if(obj) {
+                document.getElementById('control-panel').style.display = 'block';
+                document.getElementById('objW').value = obj.ow;
+                document.getElementById('objH').value = obj.oh;
+            } else {
+                document.getElementById('control-panel').style.display = 'none';
+            }
+        }
+
+        function updateSelected() {
+            if(selectedObj) {
+                selectedObj.ow = parseInt(document.getElementById('objW').value);
+                selectedObj.oh = parseInt(document.getElementById('objH').value);
+                draw();
+            }
+        }
+
+        function deleteSelected() {
+            if(selectedObj) { optics = optics.filter(o => o !== selectedObj); selectObject(null); draw(); }
+        }
+
+        function clearAll() { optics = []; selectObject(null); draw(); }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            let hit = false;
+            for(let i = optics.length - 1; i >= 0; i--) {
+                let o = optics[i];
+                if(Math.hypot(o.x - mx, o.y - my) < Math.max(o.ow, o.oh) / 1.8) { selectObject(o); isDragging = true; hit = true; break; }
+            }
+            if(!hit) selectObject(null);
+            draw();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if(isDragging && selectedObj) {
+                const rect = canvas.getBoundingClientRect();
+                selectedObj.x = e.clientX - rect.left; selectedObj.y = e.clientY - rect.top;
+                draw();
+            }
+        });
+
+        window.addEventListener('mouseup', () => isDragging = false);
+        
+        canvas.addEventListener('wheel', (e) => {
+            if(selectedObj) { 
+                e.preventDefault(); 
+                selectedObj.angle += (e.deltaY > 0 ? 1 : -1) * (0.5 * Math.PI / 180); 
+                draw(); 
+            }
+        }, { passive: false });
+
+        function getBoundaries(obj) {
+            let segs = [];
+            let sw = obj.ow, sh = obj.oh;
+            let steps = 24;
+
+            if (obj.type === 'biconvex' || obj.type === 'convex') {
+                let lastPt = null;
+                // 앞면 곡면 생성
+                for (let i = 0; i <= steps; i++) {
+                    let t = (i / steps) * Math.PI - Math.PI/2;
+                    let hx = -(Math.cos(t) * sw * 0.3) + sw * 0.25;
+                    let hy = (i / steps) * sh - sh / 2;
+                    let rx = hx * Math.cos(obj.angle) - hy * Math.sin(obj.angle) + obj.x;
+                    let ry = hx * Math.sin(obj.angle) + hy * Math.cos(obj.angle) + obj.y;
+                    let curr = {x: rx, y: ry};
+                    if (lastPt) {
+                        let dx = curr.x - lastPt.x, dy = curr.y - lastPt.y, l = Math.hypot(dx,dy);
+                        segs.push({p1: lastPt, p2: curr, normal: {x: -dy/l, y: dx/l}});
+                    }
+                    lastPt = curr;
+                }
+                // 뒷면 곡면 혹은 평면 생성
+                let finalPt = lastPt;
+                let backPts = [];
+                for(let i = steps; i >= 0; i--) {
+                    let t = (i / steps) * Math.PI - Math.PI/2;
+                    let hy = (i / steps) * sh - sh / 2;
+                    let hx = (obj.type === 'biconvex') ? (Math.cos(t) * sw * 0.3 - sw * 0.25) : sw * 0.25;
+                    let rx = hx * Math.cos(obj.angle) - hy * Math.sin(obj.angle) + obj.x;
+                    let ry = hx * Math.sin(obj.angle) + hy * Math.cos(obj.angle) + obj.y;
+                    backPts.push({x: rx, y: ry});
+                }
+                let bp = backPts[0];
+                let dx = bp.x - finalPt.x, dy = bp.y - finalPt.y, l = Math.hypot(dx,dy);
+                segs.push({p1: finalPt, p2: bp, normal: {x:-dy/l, y:dx/l}});
+                for(let i=0; i<backPts.length-1; i++) {
+                    let p1 = backPts[i], p2 = backPts[i+1];
+                    let rdx = p2.x - p1.x, rdy = p2.y - p1.y, rl = Math.hypot(rdx,rdy);
+                    segs.push({p1: p1, p2: p2, normal: {x: -rdy/rl, y: rdx/rl}});
+                }
+                let ep = backPts[backPts.length-1];
+                let fdx = segs[0].p1.x - ep.x, fdy = segs[0].p1.y - ep.y, fl = Math.hypot(fdx,fdy);
+                segs.push({p1: ep, p2: segs[0].p1, normal: {x:-fdy/fl, y:fdx/fl}});
+            } else if (obj.type === 'circular_block') {
+                let lastPt = null;
+                for (let i = 0; i <= steps; i++) {
+                    let t = (i / steps) * Math.PI * 2;
+                    let rx = Math.cos(t) * sw * 0.5 + obj.x;
+                    let ry = Math.sin(t) * sh * 0.5 + obj.y;
+                    let curr = {x: rx, y: ry};
+                    if (lastPt) {
+                        let dx = curr.x - lastPt.x, dy = curr.y - lastPt.y, l = Math.hypot(dx,dy);
+                        segs.push({p1: lastPt, p2: curr, normal: {x: -dy/l, y: dx/l}});
+                    }
+                    lastPt = curr;
+                }
+            } else if (obj.type === 'prism_tri') {
+                let pts = [{x: 0, y: -sh*0.5}, {x: sw*0.5, y: sh*0.5}, {x: -sw*0.5, y: sh*0.5}];
+                let trans = pts.map(p => ({
+                    x: p.x * Math.cos(obj.angle) - p.y * Math.sin(obj.angle) + obj.x,
+                    y: p.x * Math.sin(obj.angle) + p.y * Math.cos(obj.angle) + obj.y
+                }));
+                for(let i=0; i<trans.length; i++) {
+                    let p1 = trans[i], p2 = trans[(i+1)%trans.length];
+                    let dx = p2.x - p1.x, dy = p2.y - p1.y, len = Math.hypot(dx, dy);
+                    segs.push({p1: p1, p2: p2, normal: {x: -dy/len, y: dx/len}});
+                }
+            }
+            return segs;
+        }
+
+        function getIntersection(ray, seg) {
+            const x1 = seg.p1.x, y1 = seg.p1.y, x2 = seg.p2.x, y2 = seg.p2.y;
+            const x3 = ray.x, y3 = ray.y, dx = ray.dx, dy = ray.dy;
+            const det = (x2 - x1) * dy - (y2 - y1) * dx;
+            if (Math.abs(det) < 1e-6) return null;
+            const t = ((x3 - x1) * dy - (y3 - y1) * dx) / det;
+            const u = ((x3 - x1) * (y2 - y1) - (y3 - y1) * (x2 - x1)) / det;
+            if (t >= 0 && t <= 1 && u > 0.01) return { x: x1 + t * (x2 - x1), y: y1 + t * (y2 - y1), dist: u };
+            return null;
+        }
+
+        function traceRay(x, y, dx, dy, color, depth = 0) {
+            if (depth > 8) return {x, y};
+
+            let closestHit = null, closestDist = Infinity, closestSeg = null;
+            let realN = 1.52; 
+
+            for (let obj of optics) {
+                let segs = getBoundaries(obj);
+                for (let seg of segs) {
+                    let hit = getIntersection({x, y, dx, dy}, seg);
+                    if (hit && hit.dist < closestDist) { closestDist = hit.dist; closestHit = hit; closestSeg = seg; }
+                }
+            }
+
+            let endX = x + dx * (closestDist === Infinity ? 2000 : closestDist);
+            let endY = y + dy * (closestDist === Infinity ? 2000 : closestDist);
+
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(endX, endY);
+            ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            if (closestHit && closestSeg) {
+                let nx = closestSeg.normal.x, ny = closestSeg.normal.y;
+                let dot = dx * nx + dy * ny;
+                let sign = 1;
+                if (dot > 0) { nx = -nx; ny = -ny; dot = -dot; sign = -1; }
+
+                let cos1 = -dot;
+                let eta = (sign === 1) ? (1.0 / realN) : (realN / 1.0);
+                let k = 1.0 - eta * eta * (1.0 - cos1 * cos1);
+                
+                if (k >= 0) {
+                    let cos2 = Math.sqrt(k);
+                    let rx = eta * dx + (eta * cos1 - cos2) * nx;
+                    let ry = eta * dy + (eta * cos1 - cos2) * ny;
+                    return traceRay(closestHit.x + rx*0.1, closestHit.y + ry*0.1, rx, ry, color, depth + 1);
+                }
+            }
+            return {x: endX, y: endY};
+        }
+
+        function draw() {
+            ctx.fillStyle = '#030305'; ctx.fillRect(0, 0, w, h);
+
+            // 1. 조명 및 백라이트 시스템 (슬라이드 공급용 평행광)
+            ctx.save();
+            let lightGrad = ctx.createLinearGradient(0, h/2, 120, h/2);
+            lightGrad.addColorStop(0, 'rgba(255,255,255,0.15)');
+            lightGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = lightGrad;
+            ctx.fillRect(0, h/2 - 100, 150, 200);
+            ctx.restore();
+
+            // 2. 고정된 현미경 삼각형 표본 (슬라이드 글래스 포함)
+            let sSize = parseInt(document.getElementById('sampleSize').value);
+            ctx.save();
+            ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
+            ctx.fillRect(sample.x - 20, sample.y - 60, 40, 120); // 유리 슬라이드
+            
+            // 삼각형 표본 내부
+            ctx.beginPath();
+            ctx.moveTo(sample.x, sample.y - sSize/2);
+            ctx.lineTo(sample.x + sSize*0.4, sample.y + sSize/2);
+            ctx.lineTo(sample.x - sSize*0.4, sample.y + sSize/2);
+            ctx.closePath();
+            ctx.fillStyle = '#ffaa00'; ctx.strokeStyle = '#ffcc44'; ctx.lineWidth = 1.5;
+            ctx.fill(); ctx.stroke();
+            ctx.restore();
+
+            // 3. 광선 추적 및 현미경 상 확대 렌더링
+            let cAngle = parseInt(document.getElementById('coneAngle').value) * Math.PI / 180;
+            let numRays = 19; 
+            let hits = [];
+
+            ctx.save();
+            ctx.globalCompositeOperation = 'screen';
+            
+            // 표본의 상단과 하단 꼭지점에서 출발하는 세모 모양 불빛 추적
+            let pTop = { x: sample.x, y: sample.y - sSize/2 };
+            let pBot = { x: sample.x + sSize*0.2, y: sample.y + sSize/2 };
+
+            for(let i=0; i<numRays; i++) {
+                let ratio = i / (numRays - 1);
+                let a = -cAngle/2 + ratio * cAngle;
+                
+                // 표본 윗단 불빛 (빨강 계열)
+                let h1 = traceRay(pTop.x, pTop.y, Math.cos(a), Math.sin(a), 'rgba(255, 60, 60, 0.5)');
+                hits.push(h1);
+
+                // 표본 아랫단 불빛 (초록 계열)
+                let h2 = traceRay(pBot.x, pBot.y, Math.cos(a), Math.sin(a), 'rgba(60, 255, 60, 0.5)');
+                hits.push(h2);
+            }
+            ctx.restore();
+
+            // 4. 배치된 렌즈들 그리기
+            optics.forEach(o => {
+                ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.angle);
+                if(o === selectedObj) {
+                    ctx.strokeStyle = 'rgba(77, 184, 255, 0.5)'; ctx.lineWidth = 1;
+                    ctx.strokeRect(-o.ow/1.3, -o.oh/1.3, o.ow*1.6, o.oh*1.6);
+                }
+                ctx.fillStyle = 'rgba(100, 220, 255, 0.15)';
+                ctx.strokeStyle = '#4db8ff'; ctx.lineWidth = 2;
+
+                ctx.beginPath();
+                let sw = o.ow, sh = o.oh;
+                if(o.type === 'biconvex' || o.type === 'convex') {
+                    let steps = 24;
+                    for(let i=0; i<=steps; i++) {
+                        let t = (i/steps)*Math.PI - Math.PI/2, hx = -(Math.cos(t)*sw*0.3) + sw*0.25, hy = (i/steps)*sh - sh/2;
+                        if(i===0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
+                    }
+                    for(let i=steps; i>=0; i--) {
+                        let t = (i/steps)*Math.PI - Math.PI/2, hy = (i/steps)*sh - sh/2;
+                        let hx = (o.type === 'biconvex') ? (Math.cos(t)*sw*0.3 - sw*0.25) : sw*0.25;
+                        ctx.lineTo(hx, hy);
+                    }
+                } else if(o.type === 'circular_block') { ctx.ellipse(0,0, sw*0.5, sh*0.5, 0, 0, Math.PI*2); }
+                else if(o.type === 'prism_tri') { ctx.moveTo(0, -sh*0.5); ctx.lineTo(sw*0.5, sh*0.5); ctx.lineTo(-sw*0.5, sh*0.5); }
+                ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+            });
+
+            // 🛠️ 네 그림 속 핵심: 뒤쪽에 맺히는 거대한 '세모 불빛 상' 실시간 채우기!
+            if(optics.length > 0 && hits.length > 0) {
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                
+                // 광선들의 끝점을 연결해서 렌즈 뒤에 맺힌 확대된 세모 모양 영역을 그림
+                let grad = ctx.createLinearGradient(w/2, 0, w, 0);
+                grad.addColorStop(0, 'rgba(255, 200, 0, 0.25)');
+                grad.addColorStop(1, 'rgba(255, 100, 0, 0.01)');
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                // 렌즈 뒤쪽 끝점들을 이어 서 세모 영역 면적 채색
+                ctx.moveTo(hits[0].x, hits[0].y);
+                for(let i=1; i<hits.length; i++) ctx.lineTo(hits[i].x, hits[i].y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        resize();
+    </script>
+</body>
+</html>
